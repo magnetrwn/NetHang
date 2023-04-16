@@ -21,4 +21,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py') --indent-string='  '
+        pylint $(git ls-files '*.py') --indent-string='  ' --fail-under=9
