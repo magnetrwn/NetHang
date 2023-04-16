@@ -405,11 +405,10 @@ if __name__ == '__main__':
   if len(sys.argv) == 1:
     try:
       host = input('Type server IP: ')
+      HangmanServer(host).run()
     except KeyboardInterrupt:
       sys.exit()
   elif len(sys.argv) == 2:
     host = sys.argv[1]
   else:
     sys.exit('\x1B[31mToo many arguments!\x1B[0m')
-
-  HangmanServer(host).run()
