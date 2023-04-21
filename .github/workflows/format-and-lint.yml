@@ -28,6 +28,7 @@ jobs:
         autoflake $(git ls-files '*.py') --in-place --remove-all-unused-imports --remove-unused-variables --recursive
         black $(git ls-files '*.py')
     - name: Pushing formatted code
+      continue-on-error: true # Prevent fail from no diff on output
       run: |
         git config --global user.name "format-and-lint-action"
         git config --global user.email "username@users.noreply.github.com"
