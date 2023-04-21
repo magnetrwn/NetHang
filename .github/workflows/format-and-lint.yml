@@ -4,8 +4,6 @@ on:
   push:
     branches:
     - main
-    paths-ignore:
-    - '.github/workflows/**'
   pull_request:
     branches:
     - main
@@ -44,7 +42,7 @@ jobs:
       id: pylint
       run: | # Outputs only the score of the main file
         pylint $(git ls-files '*.py') --disable=C0103 --fail-under=9
-        echo 'score='$(pylint nc-hangman.py --disable=C0103 --fail-under=9 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
+        echo 'score='$(pylint nc-hangman.py --disable=C0103 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
   lint_score_readme:
     runs-on: ubuntu-latest
     needs: lint
