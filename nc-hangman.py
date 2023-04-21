@@ -14,12 +14,11 @@
 #######################################
 
 
+import socket as so
+import sys
 from multiprocessing import Process, SimpleQueue, cpu_count
 from select import select
 from time import sleep
-import socket as so
-import sys
-
 
 global_paragraphs = {
     "clear": "\033[2J\033[H",
@@ -410,8 +409,7 @@ class TimeAttackRound:
 
 
 if __name__ == "__main__":
-
-    HOST = 'localhost'
+    HOST = "localhost"
     if len(sys.argv) == 1:
         try:
             HOST = input("Type server IP: ")
