@@ -14,11 +14,12 @@
 #######################################
 
 
-import socket as so
-import sys
 from multiprocessing import Process, SimpleQueue, cpu_count
 from select import select
 from time import sleep
+import socket as so
+import sys
+
 
 global_paragraphs = {
     "clear": "\033[2J\033[H",
@@ -409,14 +410,16 @@ class TimeAttackRound:
 
 
 if __name__ == "__main__":
+
+    HOST = 'localhost'
     if len(sys.argv) == 1:
         try:
-            host = input("Type server IP: ")
+            HOST = input("Type server IP: ")
         except KeyboardInterrupt:
             sys.exit()
     elif len(sys.argv) == 2:
-        host = sys.argv[1]
+        HOST = sys.argv[1]
     else:
         sys.exit("\x1B[31mToo many arguments!\x1B[0m")
 
-    HangmanServer(host).run()
+    HangmanServer(HOST).run()
