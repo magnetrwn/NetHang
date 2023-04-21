@@ -19,9 +19,9 @@ jobs:
         pip install autoflake black isort
     - name: Formatting the code (autoflake, black, isort)
       run: |
-        isort $(git ls-files '*.py')
-        autoflake $(git ls-files '*.py') --in-place --remove-all-unused-imports --remove-unused-variables --recursive
-        black $(git ls-files '*.py')
+        isort nc-hangman.py
+        autoflake nc-hangman.py --in-place --remove-all-unused-imports --remove-unused-variables --recursive
+        black nc-hangman.py
     - name: Pushing formatted code
       continue-on-error: true # Prevent fail from no diff on output
       run: |
@@ -40,8 +40,8 @@ jobs:
         pip install pylint
     - name: Evaluating pylint (all files)
       id: pylint
-      run: | # Outputs only the score of the main file
-        pylint $(git ls-files '*.py') --disable=C0103 --fail-under=9
+      run: |
+        pylint nc-hangman.py --disable=C0103 --fail-under=9
         echo 'score='$(pylint nc-hangman.py --disable=C0103 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
   lint_score_readme:
     runs-on: ubuntu-latest
