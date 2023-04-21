@@ -4,8 +4,8 @@
 | ... TODO extend module docstring ...
 '
 """
-
 # client terminal min width: 48 chars
+
 
 #######################################
 #                                     #
@@ -13,13 +13,13 @@
 #                                     #
 #######################################
 
-import socket as so
-import sys
-from multiprocessing import Process, SimpleQueue, cpu_count
 
-# from _ctypes import PyObj_FromPtr as di
+from multiprocessing import Process, SimpleQueue, cpu_count
 from select import select
 from time import sleep
+import socket as so
+import sys
+
 
 global_paragraphs = {
     "clear": "\033[2J\033[H",
@@ -251,6 +251,7 @@ class HangmanServer:
         bind_tries = 0
         while not port_ok and bind_tries < 10:
             try:
+                # Tries binding to ports 55550 through 55559
                 port = 55550 + bind_tries
                 bind_tries += 1
                 server_socket.bind((server_address, port))
@@ -276,7 +277,7 @@ class HangmanServer:
                 sleep(0.5)
                 client_raw[0].send(global_paragraphs["title"].encode("utf-8"))
                 worker_players = players_read_queue.get()
-                ## UNCOMMENT FOR DUPLICATE IP REJECTION
+                ## Uncomment for duplicate IP rejection
                 # if worker_players.is_player_s(client_raw[0]):
                 #  client_raw[0].send('This client IP is already in use!\n'.encode('utf-8'))
                 #  client_raw[0].close()
@@ -407,14 +408,16 @@ class TimeAttackRound:
 #                        #
 ##########################
 
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         try:
             host = input("Type server IP: ")
-            HangmanServer(host).run()
         except KeyboardInterrupt:
             sys.exit()
     elif len(sys.argv) == 2:
         host = sys.argv[1]
     else:
         sys.exit("\x1B[31mToo many arguments!\x1B[0m")
+        
+    HangmanServer(host).run()
