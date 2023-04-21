@@ -35,4 +35,4 @@ jobs:
         git push
     - name: Evaluating Pylint
       run: |
-        pylint $(git ls-files '*.py') --indent-string='  ' --fail-under=9
+        pylint $(git ls-files '*.py') --fail-under=9
