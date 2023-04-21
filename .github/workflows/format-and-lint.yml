@@ -56,6 +56,8 @@ jobs:
       continue-on-error: true # Prevent fail from no diff on output
       run: |
         sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}]https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg](https:\/\/github.com\/magnetrwn\/nc-hangman\/actions)/' README.md
+        git config --global user.name "format-and-lint-action"
+        git config --global user.email "username@users.noreply.github.com"
         git add README.md
         git commit -m "Format and lint run"
         git push
