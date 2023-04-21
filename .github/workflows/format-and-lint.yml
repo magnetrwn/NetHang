@@ -54,7 +54,7 @@ jobs:
     - name: Pushing new pylint result to README.md (only nc-hangman.py)
       continue-on-error: true # Prevent fail from no diff on output
       run: |
-        sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}]https://img.shields.io/badge/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg](https://github.com/magnetrwn/nc-hangman/actions)/' README.md
+        sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}]https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg](https:\/\/github.com\/magnetrwn\/nc-hangman\/actions)/' README.md
         git add README.md
         git commit -m "Format and lint run"
         git push
