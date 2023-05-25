@@ -17,6 +17,7 @@
 import socket as so
 import sys
 from multiprocessing import Process, SimpleQueue, cpu_count
+from random import randint
 from select import select
 from time import sleep
 
@@ -228,6 +229,7 @@ class Player:
     def __init__(self, socket, nickname):
         self.socket = socket
         self.nickname = nickname
+        self.rejoin_code = str(randint(0, 9999)).zfill(4)
 
 
 ############################################
@@ -246,11 +248,12 @@ class HangmanServer:
         server_address,
         settings=None,
     ):
-        server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
+        self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
+
         if settings is None:
             settings = {}
-        max_conn = settings.get("max_conn", 20)
-        avail_ports = settings.get("avail_ports", [55550, 55551, 55552, 55553, 55554])
+        self.max_conn = settings.get("max_conn", 20)
+        self.avail_ports = settings.get("avail_ports", [29111, 29112, 29113])
         self.allow_same_source_ip = settings.get("allow_same_source_ip", False)
         self.new_conn_processes = max(
             1, settings.get("new_conn_processes", min(4, cpu_count() - 1))
@@ -258,21 +261,29 @@ class HangmanServer:
 
         port_ok = False
         bind_tries = 0
-        while not port_ok and bind_tries < len(avail_ports):
+        while not port_ok and bind_tries < len(self.avail_ports):
             try:
-                port = avail_ports[bind_tries]
+                port = self.avail_ports[bind_tries]
                 bind_tries += 1
-                server_socket.bind((server_address, port))
+                self.server_socket.bind((server_address, port))
             except (PermissionError, OSError) as error:
                 print("\x1B[31m" + error.args[1] + "\x1B[0m")
             else:
                 port_ok = True
         if port_ok is False:
             sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
-        server_socket.listen(max_conn)
-        print("Server on " + server_address + ":" + str(port))
-
-        self.server_socket = server_socket
+        self.server_socket.listen(self.max_conn)
+        print(
+            "Running on [\x1B[36m"
+            + server_address
+            + ":"
+            + str(port)
+            + "\x1B[0m] with "
+            + str(self.new_conn_processes)
+            + " client workers, "
+            + str(self.max_conn)
+            + " total clients."
+        )
         self.players = PlayerList()
 
     def accept_clients_worker(
@@ -298,7 +309,7 @@ class HangmanServer:
                     try:
                         while True:
                             sleep(0.25)
-                            dirty = client_raw[0].recv(100)
+                            dirty = client_raw[0].recv(512)
                             if not dirty:
                                 break
                     except TimeoutError:
@@ -312,6 +323,7 @@ class HangmanServer:
                             client_raw[0].send(
                                 "This nickname is already in use!\n".encode("utf-8")
                                 # TODO: allow reconnections for disconnected users
+                                #"Rejoining as this user? Code: \n".encode("utf-8")
                             )
                             continue
                     except UnicodeDecodeError:
