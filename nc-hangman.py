@@ -21,7 +21,6 @@ from random import randint
 from select import select
 from time import sleep
 
-
 STATIC_GRTEXT = {
     "clear": "\033[2J\033[H",
     "title": "\033[2J\033[H\x1B[01;36m ============= Welcome to Hangman =============\x1B[0m  \n",
@@ -323,7 +322,7 @@ class HangmanServer:
                             client_raw[0].send(
                                 "This nickname is already in use!\n".encode("utf-8")
                                 # TODO: allow reconnections for disconnected users
-                                #"Rejoining as this user? Code: \n".encode("utf-8")
+                                # "Rejoining as this user? Code: \n".encode("utf-8")
                             )
                             continue
                     except UnicodeDecodeError:
