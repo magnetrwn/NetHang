@@ -171,14 +171,13 @@ class PlayerList:
                 if player.nickname == nickname:
                     return True
             return False
-        elif socket is not None:
+        if socket is not None:
             for player in self.player_list:
                 if player.socket == socket:
                     return True
             return False
-        else:
-            return False
-        
+        return False
+
     def get_player(self, nickname=None, socket=None):
         """Get a player by nickname or socket."""
         if nickname is not None:
@@ -186,13 +185,12 @@ class PlayerList:
                 if player.nickname == nickname:
                     return player
             return None
-        elif socket is not None:
+        if socket is not None:
             for player in self.player_list:
                 if player.socket == socket:
                     return player
             return None
-        else:
-            return None
+        return None
 
     def get_sockets(self):
         """Get a list of all player sockets."""
@@ -215,7 +213,7 @@ class PlayerList:
                     del self.player_list[i]
                     break
                 i += 1
-        elif socket is not None:    
+        if socket is not None:
             i = 0
             for player in self.player_list:
                 if player.socket == socket:
@@ -239,25 +237,34 @@ class Player:
 ############################################
 
 
+# TODO: reduce complexity
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
     def __init__(
         self,
         server_address,
-        server_socket=so.socket(so.AF_INET, so.SOCK_STREAM),
-        max_conn=20,
+        settings=None,
     ):
+        server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
+        if settings is None:
+            settings = {}
+        max_conn = settings.get("max_conn", 20)
+        avail_ports = settings.get("avail_ports", [55550, 55551, 55552, 55553, 55554])
+        self.allow_same_source_ip = settings.get("allow_same_source_ip", False)
+        self.new_conn_processes = max(
+            1, settings.get("new_conn_processes", min(4, cpu_count() - 1))
+        )
+
         port_ok = False
         bind_tries = 0
-        while not port_ok and bind_tries < 10:
+        while not port_ok and bind_tries < len(avail_ports):
             try:
-                # Tries binding to ports 55550 through 55559
-                port = 55550 + bind_tries
+                port = avail_ports[bind_tries]
                 bind_tries += 1
                 server_socket.bind((server_address, port))
-            except (PermissionError, OSError) as e:
-                print("\x1B[31m" + e.args[1] + "\x1B[0m")
+            except (PermissionError, OSError) as error:
+                print("\x1B[31m" + error.args[1] + "\x1B[0m")
             else:
                 port_ok = True
         if port_ok is False:
@@ -272,32 +279,58 @@ class HangmanServer:
         self, server_socket, players_read_queue, players_write_queue
     ):
         """Worker daemon process that accepts new client connections."""
+        # TODO: stop extra processes on full capacity lobby
         while True:
             try:
                 client_raw = server_socket.accept()
                 sleep(0.5)
                 client_raw[0].send(STATIC_GRTEXT["title"].encode("utf-8"))
                 worker_players = players_read_queue.get()
-                ## Uncomment for duplicate IP rejection
-                # if worker_players.is_player(socket=client_raw[0]):
-                #  client_raw[0].send('This client IP is already in use!\n'.encode('utf-8'))
-                #  client_raw[0].close()
-                # else:
-                client_nickname = "?"
-                while not client_nickname.isalnum() or len(client_nickname) < 2:
-                    sleep(0.5)
-                    client_raw[0].send(
-                        "Nickname (alphanumeric, 2-32 chars): ".encode("utf-8")
-                    )
+                if not self.allow_same_source_ip:
+                    if worker_players.is_player(socket=client_raw[0]):
+                        client_raw[0].send(
+                            "This client IP is already in use!\n".encode("utf-8")
+                        )
+                        client_raw[0].close()
+                        continue
+                while True:
+                    client_raw[0].settimeout(1)
                     try:
-                        client_nickname = client_raw[0].recv(33)[:-1].decode("utf-8")
+                        while True:
+                            sleep(0.25)
+                            dirty = client_raw[0].recv(100)
+                            if not dirty:
+                                break
+                    except TimeoutError:
+                        pass
+                    client_raw[0].settimeout(None)
+                    client_nickname = ""
+                    client_raw[0].send("Nickname: ".encode("utf-8"))
+                    try:
+                        client_nickname = client_raw[0].recv(35)[:-1].decode("utf-8")
                         if worker_players.is_player(nickname=client_nickname):
                             client_raw[0].send(
                                 "This nickname is already in use!\n".encode("utf-8")
+                                # TODO: allow reconnections for disconnected users
                             )
-                            client_nickname = "?"
+                            continue
                     except UnicodeDecodeError:
-                        client_nickname = "?"
+                        client_raw[0].send(
+                            "Please only use UTF-8 characters!\n".encode("utf-8")
+                        )
+                        continue
+                    if (
+                        not client_nickname.isalnum()
+                        or len(client_nickname) < 2
+                        or len(client_nickname) > 32
+                    ):
+                        client_raw[0].send(
+                            "Only alphanumeric between 2 and 32 characters!\n".encode(
+                                "utf-8"
+                            )
+                        )
+                        continue
+                    break
                 players_write_queue.put(Player(client_raw[0], client_nickname))
                 client_raw[0].send(STATIC_GRTEXT["opening"].encode("utf-8"))
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
@@ -311,7 +344,7 @@ class HangmanServer:
         players_read_queue = SimpleQueue()
         players_write_queue = SimpleQueue()
 
-        for _ in range(max(1, min(4, cpu_count() - 1))):
+        for _ in range(self.new_conn_processes):
             Process(
                 target=HangmanServer.accept_clients_worker,
                 args=(
@@ -328,7 +361,7 @@ class HangmanServer:
                 self.players.add_player(players_write_queue.get())
             while not players_read_queue.empty():
                 players_read_queue.get()
-            for _ in range(max(1, min(4, cpu_count() - 1))):
+            for _ in range(self.new_conn_processes):
                 players_read_queue.put(self.players)
 
             try:
@@ -422,4 +455,4 @@ if __name__ == "__main__":
     else:
         sys.exit("\x1B[31mToo many arguments!\x1B[0m")
 
-    HangmanServer(HOST).run()
+    HangmanServer(HOST, settings={"allow_same_source_ip": False}).run()
