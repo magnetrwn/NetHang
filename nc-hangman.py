@@ -20,7 +20,8 @@ from multiprocessing import Process, SimpleQueue, cpu_count
 from select import select
 from time import sleep
 
-global_paragraphs = {
+
+STATIC_GRTEXT = {
     "clear": "\033[2J\033[H",
     "title": "\033[2J\033[H\x1B[01;36m ============= Welcome to Hangman =============\x1B[0m  \n",
     "opening": """\nWelcome to the game of Hangman on command line!
@@ -163,33 +164,35 @@ class PlayerList:
     def __init__(self):
         self.player_list = []
 
-    def is_player_n(self, nickname):
-        """Check if there is a player with a certain nickname."""
-        for player in self.player_list:
-            if player.nickname == nickname:
-                return True
-        return False
-
-    def is_player_s(self, socket):
-        """Check if there is a player with a certain socket."""
-        for player in self.player_list:
-            if player.socket == socket:
-                return True
-        return False
-
-    def get_player_n(self, nickname):
-        """Get a player by nickname."""
-        for player in self.player_list:
-            if player.nickname == nickname:
-                return player
-        return None
-
-    def get_player_s(self, socket):
-        """Get a player by socket."""
-        for player in self.player_list:
-            if player.socket == socket:
-                return player
-        return None
+    def is_player(self, nickname=None, socket=None):
+        """Check if there is a player with a certain nickname or socket."""
+        if nickname is not None:
+            for player in self.player_list:
+                if player.nickname == nickname:
+                    return True
+            return False
+        elif socket is not None:
+            for player in self.player_list:
+                if player.socket == socket:
+                    return True
+            return False
+        else:
+            return False
+        
+    def get_player(self, nickname=None, socket=None):
+        """Get a player by nickname or socket."""
+        if nickname is not None:
+            for player in self.player_list:
+                if player.nickname == nickname:
+                    return player
+            return None
+        elif socket is not None:
+            for player in self.player_list:
+                if player.socket == socket:
+                    return player
+            return None
+        else:
+            return None
 
     def get_sockets(self):
         """Get a list of all player sockets."""
@@ -203,23 +206,22 @@ class PlayerList:
         """Add a player of Player type."""
         self.player_list.append(player)
 
-    def drop_player_n(self, nickname):
-        """Drop a player by nickname."""
-        i = 0
-        for player in self.player_list:
-            if player.nickname == nickname:
-                del self.player_list[i]
-                break
-            i += 1
-
-    def drop_player_s(self, socket):
-        """Drop a player by socket."""
-        i = 0
-        for player in self.player_list:
-            if player.socket == socket:
-                del self.player_list[i]
-                break
-            i += 1
+    def drop_player(self, nickname=None, socket=None):
+        """Drop a player by nickname or socket."""
+        if nickname is not None:
+            i = 0
+            for player in self.player_list:
+                if player.nickname == nickname:
+                    del self.player_list[i]
+                    break
+                i += 1
+        elif socket is not None:    
+            i = 0
+            for player in self.player_list:
+                if player.socket == socket:
+                    del self.player_list[i]
+                    break
+                i += 1
 
 
 class Player:
@@ -274,10 +276,10 @@ class HangmanServer:
             try:
                 client_raw = server_socket.accept()
                 sleep(0.5)
-                client_raw[0].send(global_paragraphs["title"].encode("utf-8"))
+                client_raw[0].send(STATIC_GRTEXT["title"].encode("utf-8"))
                 worker_players = players_read_queue.get()
                 ## Uncomment for duplicate IP rejection
-                # if worker_players.is_player_s(client_raw[0]):
+                # if worker_players.is_player(socket=client_raw[0]):
                 #  client_raw[0].send('This client IP is already in use!\n'.encode('utf-8'))
                 #  client_raw[0].close()
                 # else:
@@ -289,7 +291,7 @@ class HangmanServer:
                     )
                     try:
                         client_nickname = client_raw[0].recv(33)[:-1].decode("utf-8")
-                        if worker_players.is_player_n(client_nickname):
+                        if worker_players.is_player(nickname=client_nickname):
                             client_raw[0].send(
                                 "This nickname is already in use!\n".encode("utf-8")
                             )
@@ -297,7 +299,7 @@ class HangmanServer:
                     except UnicodeDecodeError:
                         client_nickname = "?"
                 players_write_queue.put(Player(client_raw[0], client_nickname))
-                client_raw[0].send(global_paragraphs["opening"].encode("utf-8"))
+                client_raw[0].send(STATIC_GRTEXT["opening"].encode("utf-8"))
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
             except BrokenPipeError:
                 sleep(0.5)
@@ -336,13 +338,13 @@ class HangmanServer:
                 sys.exit("\r\x1B[90mKeyboardInterrupt\x1B[0m")
 
             for socket in ready_sockets:
-                player = self.players.get_player_s(socket)
+                player = self.players.get_player(socket=socket)
                 try:
                     data = socket.recv(256)
                     if not data:
                         print("\x1B[36m" + player.nickname + " left\x1B[0m")
                         socket.close()
-                        self.players.drop_player_n(player.nickname)
+                        self.players.drop_player(nickname=player.nickname)
                     else:
                         try:
                             decoded_data = data[:-1].decode("utf-8")
@@ -357,7 +359,7 @@ class HangmanServer:
                 except ConnectionResetError:
                     print("\x1B[33m" + player.nickname + " reset connection\x1B[0m")
                     socket.close()
-                    self.players.drop_player_n(player.nickname)
+                    self.players.drop_player(nickname=player.nickname)
 
         # self.server_socket.close()
 
