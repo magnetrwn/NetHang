@@ -4,7 +4,8 @@
 | ... TODO extend module docstring ...
 '
 """
-# client terminal min width: 48 chars
+# TODO: extend module docstring
+# TODO: state client terminal min width: 48 chars
 
 
 #######################################
@@ -141,11 +142,11 @@ You can \x1B[01;36mquit\x1B[0m at any moment with \x1B[01;36m^C\x1B[0m (Ctrl-C).
 def string_to_masked(string, to_show):
     """Return the input string wrapped, colorized and masked."""
     out = ""
-    for i in range(len(string)):
-        if i % 48 == 0:
-            out += "\n"
-        if string[i] in to_show or not string[i].isalpha():
-            out += "\x1B[01;36m" + string[i] + "\x1B[0m"
+    for i, strchar in enumerate(string):
+        if (i + 1) % 48 == 0:
+            out += "-\n-"
+        if strchar in to_show or not strchar.isalpha():
+            out += "\x1B[01;36m" + strchar + "\x1B[0m"
         else:
             out += "."
     return out
@@ -207,19 +208,15 @@ class PlayerList:
     def drop_player(self, nickname=None, socket=None):
         """Drop a player by nickname or socket."""
         if nickname is not None:
-            i = 0
-            for player in self.player_list:
+            for i, player in enumerate(self.player_list):
                 if player.nickname == nickname:
                     del self.player_list[i]
                     break
-                i += 1
         if socket is not None:
-            i = 0
-            for player in self.player_list:
+            for i, player in enumerate(self.player_list):
                 if player.socket == socket:
                     del self.player_list[i]
                     break
-                i += 1
 
 
 class Player:
@@ -269,7 +266,7 @@ class HangmanServer:
                 print("\x1B[31m" + error.args[1] + "\x1B[0m")
             else:
                 port_ok = True
-        if port_ok is False:
+        if not port_ok:
             sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
         self.server_socket.listen(self.max_conn)
         print(
