@@ -1,7 +1,7 @@
 # nc-hangman
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/nc-hangman/badge)](https://www.codefactor.io/repository/github/magnetrwn/nc-hangman)
-[![pylint: 9.37](https://img.shields.io/badge/pylint-9.37-1c7d9e.svg)](https://github.com/magnetrwn/nc-hangman/actions)
+[![pylint: 9.19](https://img.shields.io/badge/pylint-9.19-1c7d9e.svg)](https://github.com/magnetrwn/nc-hangman/actions)
 
 Single file containing a compact, client-server Python application to play hangman using netcat (nc), written for linux systems.
 
