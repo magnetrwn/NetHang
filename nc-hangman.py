@@ -152,6 +152,11 @@ def string_to_masked(string, to_show):
     return out
 
 
+def generate_rejoin_code():
+    """Generates a four number code, possibly with leading zeros."""
+    return str(randint(0, 9999)).zfill(4)
+
+
 #########################################
 #                                       #
 #        PlayerList: all classes        #
@@ -222,10 +227,13 @@ class PlayerList:
 class Player:
     """Each Player combines a socket and a nickname."""
 
-    def __init__(self, socket, nickname):
+    def __init__(self, socket, nickname, rejoin_code=None):
         self.socket = socket
         self.nickname = nickname
-        self.rejoin_code = str(randint(0, 9999)).zfill(4)
+        if rejoin_code is None:
+            self.rejoin_code = generate_rejoin_code()
+        else:
+            self.rejoin_code = rejoin_code
 
 
 ############################################
@@ -339,8 +347,20 @@ class HangmanServer:
                         )
                         continue
                     break
-                players_write_queue.put(Player(client_raw[0], client_nickname))
+                rejoin_code = generate_rejoin_code()
+                players_write_queue.put(
+                    Player(
+                        client_raw[0],
+                        client_nickname,
+                        rejoin_code=rejoin_code,
+                    )
+                )
                 client_raw[0].send(STATIC_GRTEXT["opening"].encode("utf-8"))
+                client_raw[0].send(
+                    (
+                        "Your rejoin code is \x1B[01;91m" + rejoin_code + "\x1B[0m.\n\n"
+                    ).encode("utf-8")
+                )
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
             except BrokenPipeError:
                 sleep(0.5)
