@@ -44,18 +44,18 @@ jobs:
         pip install pylint
     - name: Evaluating pylint (all files)
       id: pylint
-      run: | # Outputs only the score of the main file (nc-hangman.py)
+      run: | # Outputs only the score of the main file (NetHang.py)
         pylint $(git ls-files '*.py') --disable=C0103 --fail-under=9
-        echo 'score='$(pylint nc-hangman.py --disable=C0103 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
+        echo 'score='$(pylint NetHang.py --disable=C0103 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
   lint_score_readme:
     runs-on: ubuntu-latest
     needs: lint
     steps:
     - uses: actions/checkout@v3
-    - name: Pushing new pylint result to README.md (only nc-hangman.py)
+    - name: Pushing new pylint result to README.md (only NetHang.py)
       continue-on-error: true # Prevent fail from no diff on output
       run: |
-        sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}](https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg)](https:\/\/github.com\/magnetrwn\/nc-hangman\/actions)/' README.md
+        sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}](https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg)](https:\/\/github.com\/magnetrwn\/NetHang\/actions)/' README.md
         git config --global user.name "format-and-lint-action"
         git config --global user.email "username@users.noreply.github.com"
         git add README.md

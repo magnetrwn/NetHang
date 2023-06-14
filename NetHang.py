@@ -422,7 +422,7 @@ class HangmanServer:
                     socket.close()
                     self.players.drop_player(nickname=player.nickname)
 
-        # self.server_socket.close()
+        # TODO: what about self.server_socket.close()
 
 
 ##########################################
@@ -432,6 +432,8 @@ class HangmanServer:
 ##########################################
 
 
+# TODO: make it step by step, start by making sure all players can
+#       enter and make them alternate the turn by writing something and sending it
 class HangmanGame:
     """Base class for all turn-based hangman games."""
 
