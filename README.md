@@ -3,8 +3,10 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 [![pylint: 9.11](https://img.shields.io/badge/pylint-9.11-1c7d9e.svg)](https://github.com/magnetrwn/NetHang/actions)
 
-Single file containing a compact, client-server Python application to play hangman using netcat (nc) or any other TCP/UDP client, written for linux systems.
+Single file (for now, may separate later) containing a compact, client-server Python application to play hangman using netcat (nc) or any other TCP/UDP client, written for linux systems.
 
 Just get <b>NetHang.py</b> and run in any shell you'd like!
+
+... will add asciinema demo here ...
 
 **Currently work in progress...**
