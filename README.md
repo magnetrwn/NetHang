@@ -5,4 +5,6 @@
 
 Single file containing a compact, client-server Python application to play hangman using netcat (nc) or any other TCP/UDP client, written for linux systems.
 
+Get <b>NetHang.py</b> and run in any shell you'd like!
+
 **Currently work in progress...**
