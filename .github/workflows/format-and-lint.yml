@@ -5,7 +5,7 @@ on:
     branches:
     - main
     paths-ignore:
-    - '.github/workflows/**'
+    - ".github/workflows/**"
   pull_request:
     branches:
     - main
@@ -22,9 +22,9 @@ jobs:
         pip install autoflake black isort
     - name: Formatting the code (autoflake, black, isort)
       run: |
-        isort $(git ls-files '*.py')
-        autoflake $(git ls-files '*.py') --in-place --remove-all-unused-imports --remove-unused-variables --recursive
-        black $(git ls-files '*.py')
+        isort $(git ls-files "*.py")
+        autoflake $(git ls-files "*.py") --in-place --remove-all-unused-imports --remove-unused-variables --recursive
+        black $(git ls-files "*.py")
     - name: Pushing formatted code
       continue-on-error: true # Prevent fail from no diff on output
       run: |
@@ -45,8 +45,8 @@ jobs:
     - name: Evaluating pylint (all files)
       id: pylint
       run: | # Outputs only the score of the main file (NetHang.py)
-        pylint $(git ls-files '*.py') --disable=C0103 --fail-under=9
-        echo 'score='$(pylint NetHang.py --disable=C0103 | grep 'Your code' | cut -c29-32) >> $GITHUB_OUTPUT
+        pylint $(git ls-files "*.py") --disable=C0103 --fail-under=9
+        echo "score="$(pylint NetHang.py --disable=C0103 | grep "Your code" | cut -c29-32) >> $GITHUB_OUTPUT
   lint_score_readme:
     runs-on: ubuntu-latest
     needs: lint
@@ -55,7 +55,7 @@ jobs:
     - name: Pushing new pylint result to README.md (only NetHang.py)
       continue-on-error: true # Prevent fail from no diff on output
       run: |
-        sed -i '4s/.*/[![pylint: ${{needs.lint.outputs.score}}](https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg)](https:\/\/github.com\/magnetrwn\/NetHang\/actions)/' README.md
+        sed -i "4s/.*/[![pylint: ${{needs.lint.outputs.score}}](https:\/\/img.shields.io\/badge\/pylint-${{needs.lint.outputs.score}}-1c7d9e.svg)](https:\/\/github.com\/magnetrwn\/NetHang\/actions)/" README.md
         git config --global user.name "format-and-lint-action"
         git config --global user.email "username@users.noreply.github.com"
         git add README.md
