@@ -1,10 +1,9 @@
 """Contains HangmanServer, which runs the server"""
 
 
-import signal
 import socket as so
 import sys
-from multiprocessing import Process, SimpleQueue, cpu_count
+from multiprocessing import Process, SimpleQueue, Value, cpu_count
 from select import select
 from time import sleep
 
@@ -23,9 +22,8 @@ class HangmanServer:
     ):
         self.server_process = None
         self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
-
-        signal.signal(signal.SIGINT, self.stop)
-        signal.signal(signal.SIGTERM, self.stop)
+        self.running = Value("B")
+        self.running.value = 0
 
         if settings is None:
             settings = {}
@@ -142,9 +140,8 @@ class HangmanServer:
                 return
 
 
-    def run_worker(self):
+    def run_worker(self, running):
         """Run the hangman server."""
-        running = True
         players = PlayerList()
 
         players_read_queue = SimpleQueue()
@@ -154,16 +151,15 @@ class HangmanServer:
             Process(
                 target=self.accept_clients_worker,
                 args=(
-                    self,
                     self.server_socket,
                     players_read_queue,
-                    players_write_queue,
+                    players_write_queue
                 ),
                 daemon=True,
             ).start()
 
         # TODO: add other ways to stop, like def kill()
-        while running:
+        while bool(running.value):
             while not players_write_queue.empty():
                 players.add_player(players_write_queue.get())
             while not players_read_queue.empty():
@@ -174,7 +170,7 @@ class HangmanServer:
             try:
                 ready_sockets = select(players.get_sockets(), [], [], 2)[0]
             except KeyboardInterrupt:
-                running = False
+                running.value = 0
                 break
 
             for socket in ready_sockets:
@@ -207,11 +203,15 @@ class HangmanServer:
 
     def run(self):
         """Run the hangman server."""
-        self.server_process = Process(target=self.run_worker)
+        self.running.value = 1
+        self.server_process = Process(target=self.run_worker, args=(self.running,))
         self.server_process.start()
 
 
     def stop(self, *args):
         """Stop the hangman server."""
-        self.server_process.terminate()
-        self.server_process.join()
+        self.running.value = 0
+        self.server_process.join(5)
+        if self.server_process.is_alive():
+            self.server_process.terminate()
+            self.server_process.join()
