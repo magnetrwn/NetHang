@@ -7,13 +7,9 @@ test: clean
 	pytest
 
 .PHONY: build
-build: clean test
+build: clean
 	python3 -m build
 
 .PHONY: install
-install: clean test build
-	pip3 install --force-reinstall dist/*.whl
-
-.PHONY: fast-install
-fast-install: clean build
+install: clean build
 	pip3 install --force-reinstall dist/*.whl
