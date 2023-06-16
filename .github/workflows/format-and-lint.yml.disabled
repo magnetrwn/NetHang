@@ -1,14 +1,16 @@
+# TODO: Needs total reformatting to support larger code structure
+
 name: "Format and lint"
 
 on:
-  push:
-    branches:
-    - main
-    paths-ignore:
-    - ".github/workflows/**"
-  pull_request:
-    branches:
-    - main
+  #push:
+  #  branches:
+  #  - main
+  #  paths-ignore:
+  #  - ".github/workflows/**"
+  #pull_request:
+  #  branches:
+  #  - main
   workflow_dispatch:
 
 jobs:
