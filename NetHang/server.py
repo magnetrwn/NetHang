@@ -70,12 +70,12 @@ class HangmanServer:
             try:
                 client_raw = server_socket.accept()
                 sleep(0.5 * self.delay_factor)
-                client_raw[0].send(GRAPHICS["title"].encode("utf-8"))
+                client_raw[0].send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
                 if not self.allow_same_source_ip:
                     if worker_players.is_player(socket=client_raw[0]):
                         client_raw[0].send(
-                            "This client IP is already in use!\n".encode("utf-8")
+                            "This client IP is already in use!\n".encode("latin-1")
                         )
                         client_raw[0].close()
                         continue
@@ -91,19 +91,19 @@ class HangmanServer:
                         pass
                     client_raw[0].settimeout(None)
                     client_nickname = ""
-                    client_raw[0].send("Nickname: ".encode("utf-8"))
+                    client_raw[0].send("Nickname: ".encode("latin-1"))
                     try:
-                        client_nickname = client_raw[0].recv(35)[:-1].decode("utf-8")
+                        client_nickname = client_raw[0].recv(35)[:-1].decode("latin-1")
                         if worker_players.is_player(nickname=client_nickname):
                             client_raw[0].send(
-                                "This nickname is already in use!\n".encode("utf-8")
+                                "This nickname is already in use!\n".encode("latin-1")
                                 # TODO: allow reconnections for disconnected users
-                                # "Rejoining as this user? Code: \n".encode("utf-8")
+                                # "Rejoining as this user? Code: \n".encode("latin-1")
                             )
                             continue
                     except UnicodeDecodeError:
                         client_raw[0].send(
-                            "Please only use valid UTF-8 characters!\n".encode("utf-8")
+                            "Please only use latin-1 characters!\n".encode("latin-1")
                         )
                         continue
                     if (
@@ -113,7 +113,7 @@ class HangmanServer:
                     ):
                         client_raw[0].send(
                             "Only alphanumeric between 2 and 32 characters!\n".encode(
-                                "utf-8"
+                                "latin-1"
                             )
                         )
                         continue
@@ -126,11 +126,11 @@ class HangmanServer:
                         rejoin_code=rejoin_code,
                     )
                 )
-                client_raw[0].send(GRAPHICS["opening"].encode("utf-8"))
+                client_raw[0].send(GRAPHICS["opening"].encode("latin-1"))
                 client_raw[0].send(
                     (
                         "Your rejoin code is \x1B[01;91m" + rejoin_code + "\x1B[0m.\n\n"
-                    ).encode("utf-8")
+                    ).encode("latin-1")
                 )
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
             except BrokenPipeError:
@@ -177,7 +177,7 @@ class HangmanServer:
                         players.drop_player(nickname=player.nickname)
                     else:
                         try:
-                            decoded_data = data[:-1].decode("utf-8")
+                            decoded_data = data[:-1].decode("latin-1")
                         except UnicodeDecodeError:
                             continue
                         # send tuple of (remote_ip, decoded data) to a queue read by
