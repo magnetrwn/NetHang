@@ -13,3 +13,7 @@ build: clean test
 .PHONY: install
 install: clean test build
 	pip3 install --force-reinstall dist/*.whl
+
+.PHONY: fast-install
+fast-install: clean build
+	pip3 install --force-reinstall dist/*.whl

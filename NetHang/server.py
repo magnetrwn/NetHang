@@ -61,7 +61,6 @@ class HangmanServer:
             + " total clients."
         )
 
-
     def accept_clients_worker(
         self, server_socket, players_read_queue, players_write_queue
     ):
@@ -70,7 +69,7 @@ class HangmanServer:
         while True:
             try:
                 client_raw = server_socket.accept()
-                sleep(0.5*self.delay_factor)
+                sleep(0.5 * self.delay_factor)
                 client_raw[0].send(GRAPHICS["title"].encode("utf-8"))
                 worker_players = players_read_queue.get()
                 if not self.allow_same_source_ip:
@@ -84,7 +83,7 @@ class HangmanServer:
                     client_raw[0].settimeout(1)
                     try:
                         while True:
-                            sleep(0.25*self.delay_factor)
+                            sleep(0.25 * self.delay_factor)
                             dirty = client_raw[0].recv(512)
                             if not dirty:
                                 break
@@ -104,7 +103,7 @@ class HangmanServer:
                             continue
                     except UnicodeDecodeError:
                         client_raw[0].send(
-                            "Please only use UTF-8 characters!\n".encode("utf-8")
+                            "Please only use valid UTF-8 characters!\n".encode("utf-8")
                         )
                         continue
                     if (
@@ -135,10 +134,9 @@ class HangmanServer:
                 )
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
             except BrokenPipeError:
-                sleep(0.5*self.delay_factor)
+                sleep(0.5 * self.delay_factor)
             except KeyboardInterrupt:
                 return
-
 
     def run_worker(self, running):
         """Run the hangman server."""
@@ -150,11 +148,7 @@ class HangmanServer:
         for _ in range(self.new_conn_processes):
             Process(
                 target=self.accept_clients_worker,
-                args=(
-                    self.server_socket,
-                    players_read_queue,
-                    players_write_queue
-                ),
+                args=(self.server_socket, players_read_queue, players_write_queue),
                 daemon=True,
             ).start()
 
@@ -200,13 +194,11 @@ class HangmanServer:
         self.server_socket.close()
         print("\r\x1B[91mServer stopped.\x1B[0m")
 
-
     def run(self):
         """Run the hangman server."""
         self.running.value = 1
         self.server_process = Process(target=self.run_worker, args=(self.running,))
         self.server_process.start()
-
 
     def stop(self, *args):
         """Stop the hangman server."""
