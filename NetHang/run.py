@@ -2,41 +2,46 @@
 
 
 import sys
+from os import path
 
 from NetHang.server import HangmanServer
-
-
-SETTINGS = {
-    # Maximum number of concurrent users
-    # "max_conn": 20,
-    # Available ports to use, will only attach to one
-    # "avail_ports": [29111, 29112, 29113],
-    # Number of new user handlers, for concurrent user connection
-    # "new_conn_processes": 10
-    # Multiply all delays (mainly between queries from same user) by this value
-    # "delay_factor": 1
-    # Allow two or more users from the same source IP address
-    "allow_same_source_ip": False
-}
+from NetHang.yaml import load_yaml_dict
 
 
 def cli_run():
-    """Run server using CLI parameters, standard run option"""
-    host = "localhost"
-    if len(sys.argv) == 1:
-        try:
-            host = input("Type server IP: ")
-        except KeyboardInterrupt:
-            sys.exit()
-    elif len(sys.argv) == 2:
-        host = sys.argv[1]
+    """Run server with YAML config, standard run option"""
+    settings_path = path.join(
+        path.dirname(path.abspath(__file__)), "config", "settings.yml"
+    )
+    settings = load_yaml_dict(settings_path)
+
+    if settings.get("enabled") and settings.get("always_at") is not None:
+        host = settings.get("always_at")
     else:
-        sys.exit("\x1B[31mToo many arguments!\x1B[0m")
+        if len(sys.argv) == 1:
+            try:
+                host = input("Type server address [localhost]: ")
+            except KeyboardInterrupt:
+                return
+        elif len(sys.argv) == 2:
+            host = sys.argv[1]
+        else:
+            raise TypeError("\x1B[31mInvalid number of arguments.\x1B[0m")
 
-    HangmanServer(host, settings=SETTINGS).run()
+        if host == "":
+            host = "localhost"
+
+    server = HangmanServer(host, settings=settings if settings.get("enabled") else {})
+    server.run()
+    return server
 
 
-def temp_run_start(port):
+def cli_stop(server):
+    """Stop server"""
+    server.stop()
+
+
+def temp_run(port):
     """Run temporary server on localhost"""
     server = HangmanServer(
         "localhost",
@@ -50,6 +55,6 @@ def temp_run_start(port):
     return server
 
 
-def temp_run_stop(server):
+def temp_stop(server):
     """Stop temporary server on localhost"""
     server.stop()

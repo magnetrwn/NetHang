@@ -1,3 +1,4 @@
+# TODO: now needs renaming various updated functions
 # import socket as so
 # import random
 
@@ -12,6 +13,7 @@
 #     for _ in range(length):
 #         string += random.choices(UTF8_DATA)[0]
 #     return string
+
 
 def test_true():
     """Always true"""

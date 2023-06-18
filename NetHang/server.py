@@ -2,97 +2,78 @@
 
 
 import socket as so
-import sys
-from multiprocessing import Process, SimpleQueue, Value, cpu_count
+from os import path
+from multiprocessing import Process, SimpleQueue, Value
 from select import select
 from time import sleep
 
 from NetHang.graphics import GRAPHICS
 from NetHang.players import Player, PlayerList, generate_rejoin_code
+from NetHang.yaml import load_yaml_dict
 
 
 # TODO: reduce complexity
+# TODO: full convert to logging
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
-    # def __init__(
-    #     self,
-    #     server_address,
-    #     settings=None,
-    # ):
-    #     self.server_process = None
-    #     self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
-    #     self.running = Value("B")
-    #     self.running.value = 0
-
-    #     if settings is None:
-    #         settings = {}
-    #     self.max_conn = settings.get("max_conn", 20)
-    #     self.avail_ports = settings.get("avail_ports", [29111, 29112, 29113])
-    #     self.allow_same_source_ip = settings.get("allow_same_source_ip", False)
-    #     self.new_conn_processes = max(
-    #         1, settings.get("new_conn_processes", min(4, cpu_count() - 1))
-    #     )
-    #     self.delay_factor = settings.get("delay_factor", 1)
-
-    #     port_ok = False
-    #     bind_tries = 0
-    #     while not port_ok and bind_tries < len(self.avail_ports):
-    #         try:
-    #             port = self.avail_ports[bind_tries]
-    #             bind_tries += 1
-    #             self.server_socket.bind((server_address, port))
-    #         except (PermissionError, OSError) as error:
-    #             print("\x1B[31m" + error.args[1] + "\x1B[0m")
-    #         else:
-    #             port_ok = True
-    #     if not port_ok:
-    #         sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
-    #     self.server_socket.listen(self.max_conn)
-    #     print(
-    #         "Running on [\x1B[36m"
-    #         + server_address
-    #         + ":"
-    #         + str(port)
-    #         + "\x1B[0m] with "
-    #         + str(self.new_conn_processes)
-    #         + " client workers, "
-    #         + str(self.max_conn)
-    #         + " total clients."
-    #     )
-
-    DEFAULT_SETTINGS = {
-        "max_conn": 20,
-        "avail_ports": [29111, 29112, 29113],
-        "allow_same_source_ip": False,
-        "new_conn_processes": max(1, cpu_count() - 1),
-        "delay_factor": 1
-    }
-
     def __init__(self, server_address, settings=None):
+        # Loading settings.yaml
+        configfile_path = path.join(
+            path.dirname(path.abspath(__file__)), "config", "settings.yml"
+        )
+        configfile = load_yaml_dict(configfile_path)
+
+        # For binding & listening new server socket -> setup_server()
         self.server_address = server_address
         self.server_port = None
-        self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
+        self.server_socket = None
 
         # For the underlying server process run -> run_worker()
         self.server_process = None
         self.running = Value("B", 0)
 
+        # Extracting the server settings
         settings = settings or {}
-        self.max_conn = settings.get("max_conn", self.DEFAULT_SETTINGS["max_conn"])
-        self.avail_ports = settings.get("avail_ports", self.DEFAULT_SETTINGS["avail_ports"])
-        self.allow_same_source_ip = settings.get(
-            "allow_same_source_ip", self.DEFAULT_SETTINGS["allow_same_source_ip"]
+        if settings == {} or not settings.get("enabled"):
+            print("All default settings have been loaded.")
+        self.max_conn = (
+            settings.get("max_conn", configfile["default_max_conn"])
+            if settings.get("enabled")
+            else configfile["default_max_conn"]
         )
-        self.new_conn_processes = max(
-            1, settings.get("new_conn_processes", self.DEFAULT_SETTINGS["new_conn_processes"])
+        self.avail_ports = (
+            settings.get("avail_ports", configfile["default_avail_ports"])
+            if settings.get("enabled")
+            else configfile["default_avail_ports"]
         )
-        self.delay_factor = settings.get("delay_factor", self.DEFAULT_SETTINGS["delay_factor"])
+        self.allow_same_source_ip = (
+            settings.get(
+                "allow_same_source_ip", configfile["default_allow_same_source_ip"]
+            )
+            if settings.get("enabled")
+            else configfile["default_allow_same_source_ip"]
+        )
+        self.new_conn_processes = (
+            max(
+                1,
+                settings.get(
+                    "new_conn_processes", configfile["default_new_conn_processes"]
+                ),
+            )
+            if settings.get("enabled")
+            else configfile["default_new_conn_processes"]
+        )
+        self.delay_factor = (
+            settings.get("delay_factor", configfile["default_delay_factor"])
+            if settings.get("enabled")
+            else configfile["default_delay_factor"]
+        )
 
-        self.bind_server()
-        self.server_socket.listen(self.max_conn)
+        self.setup_server()
+
         print(
-            "Running on [\x1B[36m"
+            "Init'd server on [\x1B[36m"
             + self.server_address
             + ":"
             + str(self.server_port)
@@ -100,27 +81,31 @@ class HangmanServer:
             + str(self.new_conn_processes)
             + " client workers, "
             + str(self.max_conn)
-            + " total clients."
+            + " max clients."
         )
 
-    def bind_server(self):
+    def setup_server(self):
         """Binds the server instance defined address and port to a new server socket"""
+        self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
         port_ok = False
         bind_tries = 0
+        fatal = BaseException("Unknown exception caused server socket to fail bind!")
 
         while not port_ok and bind_tries < len(self.avail_ports):
             try:
                 port = self.avail_ports[bind_tries]
                 bind_tries += 1
                 self.server_socket.bind((self.server_address, port))
-            except (PermissionError, OSError) as error:
+            except Exception as error:
                 print("\x1B[31m" + error.args[1] + "\x1B[0m")
+                fatal = error
             else:
                 port_ok = True
 
         if not port_ok:
-            sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
+            raise fatal
 
+        self.server_socket.listen(self.max_conn)
         self.server_port = port
 
     def accept_clients_worker(
@@ -130,71 +115,79 @@ class HangmanServer:
         # TODO: stop extra processes on full capacity lobby
         while True:
             try:
-                client_raw = server_socket.accept()
+                client_socket, _ = server_socket.accept()
                 sleep(0.5 * self.delay_factor)
-                client_raw[0].send(GRAPHICS["title"].encode("latin-1"))
+                client_socket.send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
-                if not self.allow_same_source_ip:
-                    if worker_players.is_player(socket=client_raw[0]):
-                        client_raw[0].send(
-                            "This client IP is already in use!\n".encode("latin-1")
-                        )
-                        client_raw[0].close()
-                        continue
+
+                if not self.allow_same_source_ip and worker_players.is_player(
+                    socket=client_socket
+                ):
+                    client_socket.send(
+                        "This client IP is already in use!\n".encode("latin-1")
+                    )
+                    client_socket.close()
+                    continue
+
                 while True:
-                    client_raw[0].settimeout(1)
+                    client_socket.settimeout(1)
                     try:
                         while True:
                             sleep(0.25 * self.delay_factor)
-                            dirty = client_raw[0].recv(512)
+                            dirty = client_socket.recv(512)
                             if not dirty:
                                 break
                     except TimeoutError:
                         pass
-                    client_raw[0].settimeout(None)
+                    client_socket.settimeout(None)
                     client_nickname = ""
-                    client_raw[0].send("Nickname: ".encode("latin-1"))
+                    client_socket.send("Nickname: ".encode("latin-1"))
+
                     try:
-                        client_nickname = client_raw[0].recv(35)[:-1].decode("latin-1")
+                        client_nickname = client_socket.recv(33)[:-1].decode("latin-1")
                         if worker_players.is_player(nickname=client_nickname):
-                            client_raw[0].send(
+                            client_socket.send(
                                 "This nickname is already in use!\n".encode("latin-1")
                                 # TODO: allow reconnections for disconnected users
                                 # "Rejoining as this user? Code: \n".encode("latin-1")
                             )
                             continue
                     except UnicodeDecodeError:
-                        client_raw[0].send(
+                        client_socket.send(
                             "Please only use latin-1 characters!\n".encode("latin-1")
                         )
                         continue
+
                     if (
                         not client_nickname.isalnum()
                         or len(client_nickname) < 2
                         or len(client_nickname) > 32
                     ):
-                        client_raw[0].send(
+                        client_socket.send(
                             "Only alphanumeric between 2 and 32 characters!\n".encode(
                                 "latin-1"
                             )
                         )
                         continue
+
                     break
+
                 rejoin_code = generate_rejoin_code()
                 players_write_queue.put(
                     Player(
-                        client_raw[0],
+                        client_socket,
                         client_nickname,
                         rejoin_code=rejoin_code,
                     )
                 )
-                client_raw[0].send(GRAPHICS["opening"].encode("latin-1"))
-                client_raw[0].send(
+                client_socket.send(GRAPHICS["opening"].encode("latin-1"))
+                client_socket.send(
                     (
                         "Your rejoin code is \x1B[01;91m" + rejoin_code + "\x1B[0m.\n\n"
                     ).encode("latin-1")
                 )
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
+
             except BrokenPipeError:
                 sleep(0.5 * self.delay_factor)
             except KeyboardInterrupt:
@@ -202,6 +195,7 @@ class HangmanServer:
 
     def run_worker(self, running):
         """Run the hangman server."""
+        print("\r\x1B[36mServer process started.\n\x1B[0m")
         players = PlayerList()
 
         players_read_queue = SimpleQueue()
@@ -254,16 +248,18 @@ class HangmanServer:
                     players.drop_player(nickname=player.nickname)
 
         self.server_socket.close()
-        print("\r\x1B[91mServer stopped.\x1B[0m")
+        print("\r\x1B[36mServer gracefully stopped.\n\x1B[0m")
 
     def run(self):
         """Run the hangman server."""
         self.running.value = 1
         self.server_process = Process(target=self.run_worker, args=(self.running,))
         self.server_process.start()
+        print("\r\x1B[36mRunning server...\n\x1B[0m")
 
-    def stop(self, *args):
+    def stop(self):
         """Stop the hangman server."""
+        print("\r\x1B[36mStopping server...\n\x1B[0m")
         self.running.value = 0
         self.server_process.join(5)
         if self.server_process.is_alive():
