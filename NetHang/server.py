@@ -12,7 +12,6 @@ from NetHang.players import Player, PlayerList, generate_rejoin_code
 from NetHang.yaml import load_yaml_dict
 
 
-# TODO: reduce complexity
 # TODO: full convert to logging
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
@@ -33,42 +32,18 @@ class HangmanServer:
         self.server_process = None
         self.running = Value("B", 0)
 
-        # Extracting the server settings
+        # Extracting the server settings, parameter dict has priority on config file
         settings = settings or {}
-        if settings == {} or not settings.get("enabled"):
-            print("All default settings have been loaded.")
-        self.max_conn = (
-            settings.get("max_conn", configfile["default_max_conn"])
-            if settings.get("enabled")
-            else configfile["default_max_conn"]
+        self.max_conn = settings.get("max_conn", configfile["max_conn"])
+        self.avail_ports = settings.get("avail_ports", configfile["avail_ports"])
+        self.allow_same_source_ip = settings.get(
+            "allow_same_source_ip", configfile["allow_same_source_ip"]
         )
-        self.avail_ports = (
-            settings.get("avail_ports", configfile["default_avail_ports"])
-            if settings.get("enabled")
-            else configfile["default_avail_ports"]
+        self.new_conn_processes = max(
+            1,
+            settings.get("new_conn_processes", configfile["new_conn_processes"]),
         )
-        self.allow_same_source_ip = (
-            settings.get(
-                "allow_same_source_ip", configfile["default_allow_same_source_ip"]
-            )
-            if settings.get("enabled")
-            else configfile["default_allow_same_source_ip"]
-        )
-        self.new_conn_processes = (
-            max(
-                1,
-                settings.get(
-                    "new_conn_processes", configfile["default_new_conn_processes"]
-                ),
-            )
-            if settings.get("enabled")
-            else configfile["default_new_conn_processes"]
-        )
-        self.delay_factor = (
-            settings.get("delay_factor", configfile["default_delay_factor"])
-            if settings.get("enabled")
-            else configfile["default_delay_factor"]
-        )
+        self.delay_factor = settings.get("delay_factor", configfile["delay_factor"])
 
         self.setup_server()
 
@@ -115,13 +90,13 @@ class HangmanServer:
         # TODO: stop extra processes on full capacity lobby
         while True:
             try:
-                client_socket, _ = server_socket.accept()
+                client_socket, client_addr_port = server_socket.accept()
+                client_address = client_addr_port[0]
                 sleep(0.5 * self.delay_factor)
                 client_socket.send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
-
                 if not self.allow_same_source_ip and worker_players.is_player(
-                    socket=client_socket
+                    address=client_address
                 ):
                     client_socket.send(
                         "This client IP is already in use!\n".encode("latin-1")
@@ -172,11 +147,23 @@ class HangmanServer:
 
                     break
 
+                # Redundant, but needed to check if users have changed
+                worker_players = players_read_queue.get()
+                if not self.allow_same_source_ip and worker_players.is_player(
+                    address=client_address
+                ):
+                    client_socket.send(
+                        "This client IP is already in use!\n".encode("latin-1")
+                    )
+                    client_socket.close()
+                    continue
+
                 rejoin_code = generate_rejoin_code()
                 players_write_queue.put(
                     Player(
                         client_socket,
                         client_nickname,
+                        address=client_address,
                         rejoin_code=rejoin_code,
                     )
                 )
@@ -195,7 +182,7 @@ class HangmanServer:
 
     def run_worker(self, running):
         """Run the hangman server."""
-        print("\r\x1B[36mServer process started.\n\x1B[0m")
+        print("\r\x1B[36mServer process started.\x1B[0m")
         players = PlayerList()
 
         players_read_queue = SimpleQueue()
@@ -208,13 +195,12 @@ class HangmanServer:
                 daemon=True,
             ).start()
 
-        # TODO: add other ways to stop, like def kill()
         while bool(running.value):
             while not players_write_queue.empty():
                 players.add_player(players_write_queue.get())
             while not players_read_queue.empty():
                 players_read_queue.get()
-            for _ in range(self.new_conn_processes):
+            for _ in range(2*self.new_conn_processes):
                 players_read_queue.put(players)
 
             try:
@@ -255,11 +241,11 @@ class HangmanServer:
         self.running.value = 1
         self.server_process = Process(target=self.run_worker, args=(self.running,))
         self.server_process.start()
-        print("\r\x1B[36mRunning server...\n\x1B[0m")
+        print("\r\x1B[36mRunning server...\x1B[0m")
 
     def stop(self):
         """Stop the hangman server."""
-        print("\r\x1B[36mStopping server...\n\x1B[0m")
+        print("\r\x1B[36mStopping server...\x1B[0m")
         self.running.value = 0
         self.server_process.join(5)
         if self.server_process.is_alive():

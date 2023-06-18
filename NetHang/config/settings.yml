@@ -1,47 +1,24 @@
+# Note: Passing settings as dict parameter directly to HangmanServer has
+# priority on this config file.
+
 # ----------------------- SERVER SETUP SETTINGS ---------------------------
 
-# Do you want to use this config file? (defaults will always load)
-enabled: True
-
-
-
-# --------------------- CLI RUNNING CONFIGURATION -------------------------
-
 # Always use specified host address without asking the user
-always_at: localhost
+#always_at: localhost
 
-# Maximum number of concurrent users
+# (never comment) Maximum number of concurrent users
 max_conn: 20
 
-# Available ports to use, will only attach to one
+# (never comment) Available ports to use, will only attach to one
 avail_ports: [29111, 29112, 29113, 29114, 29115, 29116, 29117, 29118, 29119]
 
-# Number of new user handlers, for concurrent user connection
+# (never comment) Number of new user handlers, for concurrent user connection
 new_conn_processes: 3
 
-# Multiply all sleep() delays by this value
+# (never comment) Multiply all sleep() delays by this value
 delay_factor: 1
 
-# Allow two or more users from the same source IP address
+# (never comment) Allow two or more users from the same source IP address
 allow_same_source_ip: False
-
-
-
-# -------------------------- SERVER DEFAULTS ------------------------------
-
-# (default) Maximum number of concurrent users
-default_max_conn: 20
-
-# (default) Available ports to use, will only attach to one
-default_avail_ports: [29111, 29112, 29113, 29114, 29115, 29116, 29117, 29118, 29119]
-
-# (default) Number of new user handlers, for concurrent user connection
-default_new_conn_processes: 3
-
-# (default) Multiply all sleep() delays by this value
-default_delay_factor: 1
-
-# (default) Allow two or more users from the same source IP address
-default_allow_same_source_ip: False
 
 # -------------------------------------------------------------------------

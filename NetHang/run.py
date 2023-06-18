@@ -15,7 +15,7 @@ def cli_run():
     )
     settings = load_yaml_dict(settings_path)
 
-    if settings.get("enabled") and settings.get("always_at") is not None:
+    if settings.get("always_at") is not None:
         host = settings.get("always_at")
     else:
         if len(sys.argv) == 1:
@@ -31,7 +31,7 @@ def cli_run():
         if host == "":
             host = "localhost"
 
-    server = HangmanServer(host, settings=settings if settings.get("enabled") else {})
+    server = HangmanServer(host, settings=settings)
     server.run()
     return server
 

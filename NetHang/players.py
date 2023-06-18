@@ -10,11 +10,12 @@ def generate_rejoin_code():
 
 
 class Player:
-    """Each Player combines a socket and a nickname."""
+    """Each Player combines a socket and a nickname, and can have an address or rejoin code."""
 
-    def __init__(self, socket, nickname, rejoin_code=None):
+    def __init__(self, socket, nickname, address=None, rejoin_code=None):
         self.socket = socket
         self.nickname = nickname
+        self.address = address
         if rejoin_code is None:
             self.rejoin_code = generate_rejoin_code()
         else:
@@ -27,18 +28,20 @@ class PlayerList:
     def __init__(self):
         self.player_list = []
 
-    def is_player(self, nickname=None, socket=None):
-        """Check if there is a player with a certain nickname or socket."""
+    def is_player(self, nickname=None, socket=None, address=None):
+        """Check if there is a player with a certain nickname, socket or address."""
         if nickname is not None:
             for player in self.player_list:
                 if player.nickname == nickname:
                     return True
-            return False
         if socket is not None:
             for player in self.player_list:
                 if player.socket == socket:
                     return True
-            return False
+        if address is not None:
+            for player in self.player_list:
+                if player.address == address:
+                    return True
         return False
 
     def get_player(self, nickname=None, socket=None):
@@ -47,12 +50,10 @@ class PlayerList:
             for player in self.player_list:
                 if player.nickname == nickname:
                     return player
-            return None
         if socket is not None:
             for player in self.player_list:
                 if player.socket == socket:
                     return player
-            return None
         return None
 
     def get_sockets(self):
