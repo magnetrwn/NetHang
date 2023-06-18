@@ -5,7 +5,7 @@
 #       enter and make them alternate the turn by writing something and sending it
 class HangmanGame:
     """Base class for all turn-based hangman games."""
-
+    # Player+data queue; playerlist for game
 
 class RoundRobinGame(HangmanGame):
     """Round-robin hangman gamemode."""

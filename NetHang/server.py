@@ -15,51 +15,113 @@ from NetHang.players import Player, PlayerList, generate_rejoin_code
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
-    def __init__(
-        self,
-        server_address,
-        settings=None,
-    ):
-        self.server_process = None
+    # def __init__(
+    #     self,
+    #     server_address,
+    #     settings=None,
+    # ):
+    #     self.server_process = None
+    #     self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
+    #     self.running = Value("B")
+    #     self.running.value = 0
+
+    #     if settings is None:
+    #         settings = {}
+    #     self.max_conn = settings.get("max_conn", 20)
+    #     self.avail_ports = settings.get("avail_ports", [29111, 29112, 29113])
+    #     self.allow_same_source_ip = settings.get("allow_same_source_ip", False)
+    #     self.new_conn_processes = max(
+    #         1, settings.get("new_conn_processes", min(4, cpu_count() - 1))
+    #     )
+    #     self.delay_factor = settings.get("delay_factor", 1)
+
+    #     port_ok = False
+    #     bind_tries = 0
+    #     while not port_ok and bind_tries < len(self.avail_ports):
+    #         try:
+    #             port = self.avail_ports[bind_tries]
+    #             bind_tries += 1
+    #             self.server_socket.bind((server_address, port))
+    #         except (PermissionError, OSError) as error:
+    #             print("\x1B[31m" + error.args[1] + "\x1B[0m")
+    #         else:
+    #             port_ok = True
+    #     if not port_ok:
+    #         sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
+    #     self.server_socket.listen(self.max_conn)
+    #     print(
+    #         "Running on [\x1B[36m"
+    #         + server_address
+    #         + ":"
+    #         + str(port)
+    #         + "\x1B[0m] with "
+    #         + str(self.new_conn_processes)
+    #         + " client workers, "
+    #         + str(self.max_conn)
+    #         + " total clients."
+    #     )
+
+    DEFAULT_SETTINGS = {
+        "max_conn": 20,
+        "avail_ports": [29111, 29112, 29113],
+        "allow_same_source_ip": False,
+        "new_conn_processes": max(1, cpu_count() - 1),
+        "delay_factor": 1
+    }
+
+    def __init__(self, server_address, settings=None):
+        self.server_address = server_address
+        self.server_port = None
         self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
-        self.running = Value("B")
-        self.running.value = 0
 
-        if settings is None:
-            settings = {}
-        self.max_conn = settings.get("max_conn", 20)
-        self.avail_ports = settings.get("avail_ports", [29111, 29112, 29113])
-        self.allow_same_source_ip = settings.get("allow_same_source_ip", False)
-        self.new_conn_processes = max(
-            1, settings.get("new_conn_processes", min(4, cpu_count() - 1))
+        # For the underlying server process run -> run_worker()
+        self.server_process = None
+        self.running = Value("B", 0)
+
+        settings = settings or {}
+        self.max_conn = settings.get("max_conn", self.DEFAULT_SETTINGS["max_conn"])
+        self.avail_ports = settings.get("avail_ports", self.DEFAULT_SETTINGS["avail_ports"])
+        self.allow_same_source_ip = settings.get(
+            "allow_same_source_ip", self.DEFAULT_SETTINGS["allow_same_source_ip"]
         )
-        self.delay_factor = settings.get("delay_factor", 1)
+        self.new_conn_processes = max(
+            1, settings.get("new_conn_processes", self.DEFAULT_SETTINGS["new_conn_processes"])
+        )
+        self.delay_factor = settings.get("delay_factor", self.DEFAULT_SETTINGS["delay_factor"])
 
-        port_ok = False
-        bind_tries = 0
-        while not port_ok and bind_tries < len(self.avail_ports):
-            try:
-                port = self.avail_ports[bind_tries]
-                bind_tries += 1
-                self.server_socket.bind((server_address, port))
-            except (PermissionError, OSError) as error:
-                print("\x1B[31m" + error.args[1] + "\x1B[0m")
-            else:
-                port_ok = True
-        if not port_ok:
-            sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
+        self.bind_server()
         self.server_socket.listen(self.max_conn)
         print(
             "Running on [\x1B[36m"
-            + server_address
+            + self.server_address
             + ":"
-            + str(port)
+            + str(self.server_port)
             + "\x1B[0m] with "
             + str(self.new_conn_processes)
             + " client workers, "
             + str(self.max_conn)
             + " total clients."
         )
+
+    def bind_server(self):
+        """Binds the server instance defined address and port to a new server socket"""
+        port_ok = False
+        bind_tries = 0
+
+        while not port_ok and bind_tries < len(self.avail_ports):
+            try:
+                port = self.avail_ports[bind_tries]
+                bind_tries += 1
+                self.server_socket.bind((self.server_address, port))
+            except (PermissionError, OSError) as error:
+                print("\x1B[31m" + error.args[1] + "\x1B[0m")
+            else:
+                port_ok = True
+
+        if not port_ok:
+            sys.exit("\x1B[31mCould not bind to socket!\x1B[0m")
+
+        self.server_port = port
 
     def accept_clients_worker(
         self, server_socket, players_read_queue, players_write_queue
