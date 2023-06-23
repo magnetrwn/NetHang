@@ -41,7 +41,7 @@ exit()
 
 ## Future
 
-Currently, certain modules are tightly integrated with the hangman game. However, it would be nice to transform them into a versatile library for initiating TCP stream-interacting servers. The game code should be refactored to utilize this modular server logic instead. This approach enhances code modularity and reusability, enabling broader applicability beyond just hangman.
+The project goal extends beyond hangman (despite the repo name). The plan is to transform the application into a versatile library that can support a wide range of turn-based online games (still CLI). Future updates will focus on transitioning to a general-purpose library model, extending the existing client-server functionality in the `NetHang/game.py` file. This approach enhances flexibility and enables developers to focus on their game.
 
 ## Contributing
 

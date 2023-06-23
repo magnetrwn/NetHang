@@ -9,14 +9,15 @@
 # (never comment) Maximum number of concurrent users
 max_conn: 20
 
-# (never comment) Available ports to use, will only attach to one
+# (never comment) Available ports to use, will only attach to one, "Auto" to
+# randomly pick some ports
 avail_ports: [29111, 29112, 29113, 29114, 29115, 29116, 29117, 29118, 29119]
 
 # (never comment) Number of new user handlers, for concurrent user connection
 new_conn_processes: 3
 
 # (never comment) Multiply all sleep() delays by this value
-delay_factor: 1
+delay_factor: 1.0
 
 # (never comment) Allow two or more users from the same source IP address
 allow_same_source_ip: False

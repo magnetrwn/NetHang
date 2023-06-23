@@ -4,15 +4,17 @@
 import socket as so
 from os import path
 from multiprocessing import Process, SimpleQueue, Value
+from random import randint
 from select import select
 from time import sleep
 
+from NetHang.game import HangmanGame
 from NetHang.graphics import GRAPHICS
 from NetHang.players import Player, PlayerList, generate_rejoin_code
 from NetHang.yaml import load_yaml_dict
 
 
-# TODO: full convert to logging
+# TODO: combo print + detail logging
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
@@ -23,12 +25,12 @@ class HangmanServer:
         )
         configfile = load_yaml_dict(configfile_path)
 
-        # For binding & listening new server socket -> setup_server()
+        # For binding & listening new server socket -> _setup_server()
         self.server_address = server_address
         self.server_port = None
         self.server_socket = None
 
-        # For the underlying server process run -> run_worker()
+        # For the underlying server process run -> _run_worker()
         self.server_process = None
         self.running = Value("B", 0)
 
@@ -45,7 +47,10 @@ class HangmanServer:
         )
         self.delay_factor = settings.get("delay_factor", configfile["delay_factor"])
 
-        self.setup_server()
+        if self.avail_ports == "Auto":
+            self.avail_ports = [randint(49152, 65535) for _ in range(5)]
+
+        self._setup_server()
 
         print(
             "Init'd server on [\x1B[36m"
@@ -59,7 +64,7 @@ class HangmanServer:
             + " max clients."
         )
 
-    def setup_server(self):
+    def _setup_server(self):
         """Binds the server instance defined address and port to a new server socket"""
         self.server_socket = so.socket(so.AF_INET, so.SOCK_STREAM)
         port_ok = False
@@ -83,12 +88,12 @@ class HangmanServer:
         self.server_socket.listen(self.max_conn)
         self.server_port = port
 
-    def accept_clients_worker(
+    def _accept_clients_worker(
         self, server_socket, players_read_queue, players_write_queue
     ):
         """Worker daemon process that accepts new client connections."""
-        # TODO: stop extra processes on full capacity lobby
         while True:
+            # TODO: stop extra processes on full capacity lobby
             try:
                 client_socket, client_addr_port = server_socket.accept()
                 client_address = client_addr_port[0]
@@ -147,7 +152,7 @@ class HangmanServer:
 
                     break
 
-                # Redundant, but needed to check if users have changed
+                # TODO: redundant, but needed to check if users have changed
                 worker_players = players_read_queue.get()
                 if not self.allow_same_source_ip and worker_players.is_player(
                     address=client_address
@@ -180,7 +185,7 @@ class HangmanServer:
             except KeyboardInterrupt:
                 return
 
-    def run_worker(self, running):
+    def _run_worker(self, running):
         """Run the hangman server."""
         print("\r\x1B[36mServer process started.\x1B[0m")
         players = PlayerList()
@@ -190,21 +195,47 @@ class HangmanServer:
 
         for _ in range(self.new_conn_processes):
             Process(
-                target=self.accept_clients_worker,
+                target=self._accept_clients_worker,
                 args=(self.server_socket, players_read_queue, players_write_queue),
                 daemon=True,
             ).start()
 
+        # TODO: add choice to manually start game, like in the readme import example
+        game = HangmanGame()
+        start_timer = None
+
         while bool(running.value):
+            sleep(1)
+
             while not players_write_queue.empty():
                 players.add_player(players_write_queue.get())
             while not players_read_queue.empty():
                 players_read_queue.get()
-            for _ in range(2*self.new_conn_processes):
+            for _ in range(2 * self.new_conn_processes):
                 players_read_queue.put(players)
 
+            # Two game states, will sleep when not running
+            print("game.is_alive():", game.is_alive())
+            game.players = players
+            if not game.is_alive():
+                if start_timer == 0:
+                    game.start()
+                    start_timer = None
+                elif start_timer is None:
+                    start_timer = 30
+                else:
+                    start_timer -= 1
+
+            if start_timer is not None and start_timer % 10 == 0:
+                for socket in players.get_sockets():
+                    socket.send(
+                        (
+                            "\x1B[01;36mStarting in " + str(start_timer) + "\x1B[0m\n"
+                        ).encode("latin-1")
+                    )
+
             try:
-                ready_sockets = select(players.get_sockets(), [], [], 2)[0]
+                ready_sockets = select(players.get_sockets(), [], [], 0)[0]
             except KeyboardInterrupt:
                 running.value = 0
                 break
@@ -239,7 +270,7 @@ class HangmanServer:
     def run(self):
         """Run the hangman server."""
         self.running.value = 1
-        self.server_process = Process(target=self.run_worker, args=(self.running,))
+        self.server_process = Process(target=self._run_worker, args=(self.running,))
         self.server_process.start()
         print("\r\x1B[36mRunning server...\x1B[0m")
 
