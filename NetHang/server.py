@@ -9,9 +9,15 @@ from select import select
 from time import sleep
 
 from NetHang.game import HangmanGame
-from NetHang.graphics import GRAPHICS
+from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code
-from NetHang.yaml import load_yaml_dict
+from NetHang.util import load_yaml_dict
+
+
+def send_all(players, string, enc="latin-1"):
+    """Send all sockets the same message."""
+    for socket in players.get_sockets():
+        socket.send(string.encode(enc))
 
 
 # TODO: combo print + detail logging
@@ -19,12 +25,6 @@ class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
     def __init__(self, server_address, settings=None):
-        # Loading settings.yaml
-        configfile_path = path.join(
-            path.dirname(path.abspath(__file__)), "config", "settings.yml"
-        )
-        configfile = load_yaml_dict(configfile_path)
-
         # For binding & listening new server socket -> _setup_server()
         self.server_address = server_address
         self.server_port = None
@@ -34,22 +34,7 @@ class HangmanServer:
         self.server_process = None
         self.running = Value("B", 0)
 
-        # Extracting the server settings, parameter dict has priority on config file
-        settings = settings or {}
-        self.max_conn = settings.get("max_conn", configfile["max_conn"])
-        self.avail_ports = settings.get("avail_ports", configfile["avail_ports"])
-        self.allow_same_source_ip = settings.get(
-            "allow_same_source_ip", configfile["allow_same_source_ip"]
-        )
-        self.new_conn_processes = max(
-            1,
-            settings.get("new_conn_processes", configfile["new_conn_processes"]),
-        )
-        self.delay_factor = settings.get("delay_factor", configfile["delay_factor"])
-
-        if self.avail_ports == "Auto":
-            self.avail_ports = [randint(49152, 65535) for _ in range(5)]
-
+        self._setup_settings(settings)
         self._setup_server()
 
         print(
@@ -63,6 +48,29 @@ class HangmanServer:
             + str(self.max_conn)
             + " max clients."
         )
+
+    # TODO: make settings a class dict, not separate variables
+    def _setup_settings(self, configdict):
+        # Loading settings.yaml
+        configfile_path = path.join(
+            path.dirname(path.abspath(__file__)), "config", "settings.yml"
+        )
+
+        # Extracting the server settings, parameter dict has priority on config file
+        config = load_yaml_dict(configfile_path)
+        config.update(configdict or {})
+        self.max_conn = config.get("max_conn")
+        self.avail_ports = config.get("avail_ports")
+        self.allow_same_source_ip = config.get("allow_same_source_ip")
+        self.new_conn_processes = max(
+            1,
+            config.get("new_conn_processes"),
+        )
+        self.delay_factor = config.get("delay_factor")
+        self.lobby_duration = config.get("lobby_duration")
+
+        if self.avail_ports == "Auto":
+            self.avail_ports = [randint(49152, 65535) for _ in range(5)]
 
     def _setup_server(self):
         """Binds the server instance defined address and port to a new server socket"""
@@ -202,10 +210,16 @@ class HangmanServer:
 
         # TODO: add choice to manually start game, like in the readme import example
         game = HangmanGame()
+
+        # start_timer determines if game is on or not:
+        #   an integer if not, value is seconds countdown
+        #   None if running
         start_timer = None
 
         while bool(running.value):
-            sleep(1)
+            # One second delay while waiting, but not ingame
+            if start_timer is not None:
+                sleep(1)
 
             while not players_write_queue.empty():
                 players.add_player(players_write_queue.get())
@@ -214,28 +228,33 @@ class HangmanServer:
             for _ in range(2 * self.new_conn_processes):
                 players_read_queue.put(players)
 
-            # Two game states, will sleep when not running
-            print("game.is_alive():", game.is_alive())
-            game.players = players
             if not game.is_alive():
-                if start_timer == 0:
+                if start_timer is None:
+                    # Game is done, new timer
+                    start_timer = 30
+                elif start_timer == 0:
+                    # Game start
+                    send_all(players, GRAPHICS["clear"])
+                    game.players = players
                     game.start()
                     start_timer = None
-                elif start_timer is None:
-                    start_timer = 30
                 else:
+                    # Countdown
+                    if should_countdown(start_timer):
+                        send_all(
+                            players,
+                            "\x1B[01;36mStarting in " + str(start_timer) + "\x1B[0m\n",
+                        )
                     start_timer -= 1
 
-            if start_timer is not None and start_timer % 10 == 0:
-                for socket in players.get_sockets():
-                    socket.send(
-                        (
-                            "\x1B[01;36mStarting in " + str(start_timer) + "\x1B[0m\n"
-                        ).encode("latin-1")
-                    )
-
             try:
-                ready_sockets = select(players.get_sockets(), [], [], 0)[0]
+                ready_sockets = select(
+                    # No longer one second delay, now realtime (poll)
+                    players.get_sockets(),
+                    [],
+                    [],
+                    1 if start_timer is None else 0,
+                )[0]
             except KeyboardInterrupt:
                 running.value = 0
                 break

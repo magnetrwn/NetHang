@@ -5,7 +5,7 @@ import sys
 from os import path
 
 from NetHang.server import HangmanServer
-from NetHang.yaml import load_yaml_dict
+from NetHang.util import load_yaml_dict
 
 
 def cli_run():
@@ -19,14 +19,11 @@ def cli_run():
         host = settings.get("always_at")
     else:
         if len(sys.argv) == 1:
-            try:
-                host = input("Type server address [localhost]: ")
-            except KeyboardInterrupt:
-                return
+            host = input("Type server address [localhost]: ")
         elif len(sys.argv) == 2:
             host = sys.argv[1]
         else:
-            raise TypeError("\x1B[31mInvalid number of arguments.\x1B[0m")
+            raise IndexError("Invalid number of arguments.")
 
         if host == "":
             host = "localhost"
@@ -41,20 +38,20 @@ def cli_stop(server):
     server.stop()
 
 
-def temp_run(port):
-    """Run temporary server on localhost"""
-    server = HangmanServer(
-        "localhost",
-        settings={
-            "avail_ports": [port],
-            "allow_same_source_ip": True,
-            "delay_factor": 0,
-        },
-    )
-    server.run()
-    return server
+# def temp_run(port):
+#     """Run temporary server on localhost"""
+#     server = HangmanServer(
+#         "localhost",
+#         settings={
+#             "avail_ports": [port],
+#             "allow_same_source_ip": True,
+#             "delay_factor": 0,
+#         },
+#     )
+#     server.run()
+#     return server
 
 
-def temp_stop(server):
-    """Stop temporary server on localhost"""
-    server.stop()
+# def temp_stop(server):
+#     """Stop temporary server on localhost"""
+#     server.stop()

@@ -1,4 +1,9 @@
-"""ANSI graphics for overall TUI"""
+"""ANSI graphics for overall TUI, server and client"""
+
+
+def should_countdown(number):
+    """Countdown values should be printed if here"""
+    return number in [1, 2, 3, 4, 5, 10, 15, 30, 45, 60, 90, 120, 180, 300]
 
 
 def string_to_masked(string, to_show):

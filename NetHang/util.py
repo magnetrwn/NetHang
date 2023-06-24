@@ -1,4 +1,4 @@
-"""Functions to interact with YAML files, mostly configs"""
+"""Utility functions"""
 
 
 import yaml
