@@ -28,7 +28,7 @@ def cli_run():
         if host == "":
             host = "localhost"
 
-    server = HangmanServer(host, settings=settings)
+    server = HangmanServer(host, priority_settings=settings)
     server.run()
     return server
 

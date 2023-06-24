@@ -6,9 +6,9 @@ from os import path
 from multiprocessing import Process, SimpleQueue, Value
 from random import randint
 from select import select
-from time import sleep
+from time import sleep, time
 
-from NetHang.game import HangmanGame
+from NetHang.game import HangmanGame, Command
 from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code
 from NetHang.util import load_yaml_dict
@@ -24,7 +24,7 @@ def send_all(players, string, enc="latin-1"):
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
-    def __init__(self, server_address, settings=None):
+    def __init__(self, server_address, priority_settings=None, bypass_yaml=False):
         # For binding & listening new server socket -> _setup_server()
         self.server_address = server_address
         self.server_port = None
@@ -34,7 +34,7 @@ class HangmanServer:
         self.server_process = None
         self.running = Value("B", 0)
 
-        self._setup_settings(settings)
+        self._setup_settings(priority_settings, bypass_yaml)
         self._setup_server()
 
         print(
@@ -43,34 +43,34 @@ class HangmanServer:
             + ":"
             + str(self.server_port)
             + "\x1B[0m] with "
-            + str(self.new_conn_processes)
+            + str(self.settings["new_conn_processes"])
             + " client workers, "
-            + str(self.max_conn)
+            + str(self.settings["max_conn"])
             + " max clients."
         )
 
     # TODO: make settings a class dict, not separate variables
-    def _setup_settings(self, configdict):
+    def _setup_settings(self, priority_settings, bypass_yaml):
         # Loading settings.yaml
-        configfile_path = path.join(
+        file_settings_path = path.join(
             path.dirname(path.abspath(__file__)), "config", "settings.yml"
         )
 
         # Extracting the server settings, parameter dict has priority on config file
-        config = load_yaml_dict(configfile_path)
-        config.update(configdict or {})
-        self.max_conn = config.get("max_conn")
-        self.avail_ports = config.get("avail_ports")
-        self.allow_same_source_ip = config.get("allow_same_source_ip")
-        self.new_conn_processes = max(
-            1,
-            config.get("new_conn_processes"),
+        settings = load_yaml_dict(file_settings_path) if not bypass_yaml else {}
+        settings.update(priority_settings or {})
+        settings.update(
+            {
+                "new_conn_processes": max(
+                    1,
+                    settings.get("new_conn_processes"),
+                )
+            }
         )
-        self.delay_factor = config.get("delay_factor")
-        self.lobby_duration = config.get("lobby_duration")
+        if settings.get("avail_ports") == "auto":
+            settings.update({"avail_ports": [randint(49152, 65535) for _ in range(5)]})
 
-        if self.avail_ports == "Auto":
-            self.avail_ports = [randint(49152, 65535) for _ in range(5)]
+        self.settings = settings
 
     def _setup_server(self):
         """Binds the server instance defined address and port to a new server socket"""
@@ -79,9 +79,9 @@ class HangmanServer:
         bind_tries = 0
         fatal = BaseException("Unknown exception caused server socket to fail bind!")
 
-        while not port_ok and bind_tries < len(self.avail_ports):
+        while not port_ok and bind_tries < len(self.settings["avail_ports"]):
             try:
-                port = self.avail_ports[bind_tries]
+                port = self.settings["avail_ports"][bind_tries]
                 bind_tries += 1
                 self.server_socket.bind((self.server_address, port))
             except Exception as error:
@@ -93,7 +93,7 @@ class HangmanServer:
         if not port_ok:
             raise fatal
 
-        self.server_socket.listen(self.max_conn)
+        self.server_socket.listen(self.settings["max_conn"])
         self.server_port = port
 
     def _accept_clients_worker(
@@ -105,12 +105,12 @@ class HangmanServer:
             try:
                 client_socket, client_addr_port = server_socket.accept()
                 client_address = client_addr_port[0]
-                sleep(0.5 * self.delay_factor)
+                sleep(0.5 * self.settings["delay_factor"])
                 client_socket.send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
-                if not self.allow_same_source_ip and worker_players.is_player(
-                    address=client_address
-                ):
+                if not self.settings[
+                    "allow_same_source_ip"
+                ] and worker_players.is_player(address=client_address):
                     client_socket.send(
                         "This client IP is already in use!\n".encode("latin-1")
                     )
@@ -121,7 +121,7 @@ class HangmanServer:
                     client_socket.settimeout(1)
                     try:
                         while True:
-                            sleep(0.25 * self.delay_factor)
+                            sleep(0.25 * self.settings["delay_factor"])
                             dirty = client_socket.recv(512)
                             if not dirty:
                                 break
@@ -162,9 +162,9 @@ class HangmanServer:
 
                 # TODO: redundant, but needed to check if users have changed
                 worker_players = players_read_queue.get()
-                if not self.allow_same_source_ip and worker_players.is_player(
-                    address=client_address
-                ):
+                if not self.settings[
+                    "allow_same_source_ip"
+                ] and worker_players.is_player(address=client_address):
                     client_socket.send(
                         "This client IP is already in use!\n".encode("latin-1")
                     )
@@ -189,7 +189,7 @@ class HangmanServer:
                 print("\x1B[36m" + client_nickname + " joined\x1B[0m")
 
             except BrokenPipeError:
-                sleep(0.5 * self.delay_factor)
+                sleep(0.5 * self.settings["delay_factor"])
             except KeyboardInterrupt:
                 return
 
@@ -201,7 +201,7 @@ class HangmanServer:
         players_read_queue = SimpleQueue()
         players_write_queue = SimpleQueue()
 
-        for _ in range(self.new_conn_processes):
+        for _ in range(self.settings["new_conn_processes"]):
             Process(
                 target=self._accept_clients_worker,
                 args=(self.server_socket, players_read_queue, players_write_queue),
@@ -219,19 +219,22 @@ class HangmanServer:
         while bool(running.value):
             # One second delay while waiting, but not ingame
             if start_timer is not None:
-                sleep(1)
+                try:
+                    sleep(1 - time() % 1)
+                except KeyboardInterrupt:
+                    running.value = 0
 
             while not players_write_queue.empty():
                 players.add_player(players_write_queue.get())
             while not players_read_queue.empty():
                 players_read_queue.get()
-            for _ in range(2 * self.new_conn_processes):
+            for _ in range(2 * self.settings["new_conn_processes"]):
                 players_read_queue.put(players)
 
             if not game.is_alive():
                 if start_timer is None:
                     # Game is done, new timer
-                    start_timer = 30
+                    start_timer = self.settings["lobby_time"]
                 elif start_timer == 0:
                     # Game start
                     send_all(players, GRAPHICS["clear"])
@@ -272,12 +275,16 @@ class HangmanServer:
                             decoded_data = data[:-1].decode("latin-1")
                         except UnicodeDecodeError:
                             continue
-                        # send tuple of (remote_ip, decoded data) to a queue read by
-                        # a game loop process here...
 
-                        print(
-                            "\x1B[90m<" + player.nickname + ">:\x1B[0m " + decoded_data
-                        )
+                        # Send received string of decoded data to the commands queue
+                        # of the game process, which will queue all requests by
+                        # time of reception
+                        game.commands_queue.put(Command(player, decoded_data))
+
+                        # send_all(
+                        #     players,
+                        #     "\x1B[90m<" + player.nickname + ">:\x1B[0m " + decoded_data,
+                        # )
                 except ConnectionResetError:
                     print("\x1B[33m" + player.nickname + " reset connection.\x1B[0m")
                     socket.close()

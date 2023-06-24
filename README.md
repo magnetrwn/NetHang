@@ -3,7 +3,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 
-NetHang is a compact client-server Python game that allows you to play hangman online by starting a server and allowing clients to connect using netcat (nc) or any other TCP client.
+NetHang is a compact client-server Python game that allows you to play hangman online (in different gamemodes) by starting a server and allowing clients to connect using netcat (nc) or any other TCP client.
 
 ### Asciinema Demo
 
@@ -41,7 +41,7 @@ exit()
 
 ## Future
 
-The project goal extends beyond hangman (despite the repo name). The plan is to transform the application into a versatile library that can support a wide range of turn-based online games (still CLI). Future updates will focus on transitioning to a general-purpose library model, extending the existing client-server functionality in the `NetHang/game.py` file. This approach enhances flexibility and enables developers to focus on their game.
+The project goal extends beyond hangman (despite the repo name). The plan is to transform the application into a versatile library for CLI games. Future updates (post-0.0.x) will focus on transforming the project into a general-purpose library model, to provide client-server functionality. This enhances project flexibility and enables developers to focus on their game.
 
 ## Contributing
 

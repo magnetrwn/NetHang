@@ -1,7 +1,7 @@
 """Fundamental classes and functions to manage players"""
 
 
-from random import randint
+from random import randint, choice
 
 
 def generate_rejoin_code():
@@ -27,6 +27,10 @@ class PlayerList:
 
     def __init__(self):
         self.player_list = []
+
+    def count(self):
+        """Get the number of players."""
+        return len(self.player_list)
 
     def is_player(self, nickname=None, socket=None, address=None):
         """Check if there is a player with a certain nickname, socket or address."""
@@ -55,6 +59,10 @@ class PlayerList:
                 if player.socket == socket:
                     return player
         return None
+
+    def get_random_player(self):
+        """Get a player by chance."""
+        return choice(self.player_list)
 
     def get_sockets(self):
         """Get a list of all player sockets."""

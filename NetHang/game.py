@@ -24,13 +24,18 @@ class HangmanGame:
 
         self.game_process = None
 
+    # TODO: catching on KeyboardInterrupt'd server
     def _game_loop(self, players, commands_queue):
-        print("_game_loop():", players.get_nicknames())
-        print("_game_loop(): game started")
-        sleep(6)
-        print("_game_loop(): done")
+        hanger, prev_hanger = None, None
+        for _ in range(5):
+            if players.count() > 1:
+                while hanger == prev_hanger:
+                    hanger = players.get_random_player()
+            HangmanRound(hanger, players, commands_queue)
+            prev_hanger = hanger
 
     def start(self):
+        """Start the game."""
         if not self.is_alive():
             self.game_process = Process(
                 target=self._game_loop, args=(self.players, self.commands_queue)
@@ -40,6 +45,7 @@ class HangmanGame:
             raise RuntimeError("Already started.")
 
     def stop(self):
+        """Stop the game."""
         self.game_process.join(5)
         if self.game_process.is_alive():
             self.game_process.terminate()
@@ -51,37 +57,16 @@ class HangmanGame:
             return self.game_process.is_alive()
         return False
 
-    def control(self):
-        """Getter for control of the commands queue."""
-        return self.commands_queue
 
-
-class RoundRobinGame(HangmanGame):
-    """Round-robin hangman gamemode."""
-
-
-class KingHillGame(HangmanGame):
-    """King of the hill hangman gamemode."""
-
-
-class WordlistGame(HangmanGame):
-    """Wordlist hangman gamemode."""
-
-
-class Round:
+class HangmanRound:
     """A single round of the turn-based hangman game."""
 
+    def __init__(self, hanger, players, commands_queue):
+        pass
 
-class Turn:
+
+class HangmanTurn:
     """A single turn of the turn-based hangman game."""
-
-
-class TimeAttackGame:
-    """Time attack hangman gamemode, not turn-based."""
-
-
-class TimeAttackRound:
-    """A single round of the time attack version hangman game."""
 
 
 # TODO: This file can be expanded with more games, not just related

@@ -1,25 +1,29 @@
-# Note: Passing settings as dict parameter directly to HangmanServer has
-# priority on this config file.
+# Note: Passing settings as dict parameter directly has priority on this
+# config file.
 
-# ----------------------- SERVER SETUP SETTINGS ---------------------------
+# ------------------------------ run.py -----------------------------------
 
 # Always use specified host address without asking the user
-#always_at: localhost
+always_at: null
 
-# (never comment) Maximum number of concurrent users
+# ----------------------------- server.py ---------------------------------
+
+# Maximum number of concurrent users
 max_conn: 20
 
-# (never comment) Available ports to use, will only attach to one, "Auto" to
-# randomly pick some ports
+# Available ports to use, will only attach to one, "auto" for random ports
 avail_ports: [29111, 29112, 29113, 29114, 29115, 29116, 29117, 29118, 29119]
 
-# (never comment) Number of new user handlers, for concurrent user connection
+# Number of new user handlers, for concurrent user connection
 new_conn_processes: 3
 
-# (never comment) Multiply all sleep() delays by this value
+# Multiply all sleep() delays by this value
 delay_factor: 1.0
 
-# (never comment) Allow two or more users from the same source IP address
-allow_same_source_ip: False
+# Allow two or more users from the same source IP address
+allow_same_source_ip: true
+
+# Duration of the pause between games, the value at which countdown starts
+lobby_time: 20
 
 # -------------------------------------------------------------------------
