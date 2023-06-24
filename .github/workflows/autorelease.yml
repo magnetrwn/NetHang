@@ -1,12 +1,6 @@
 name: Create Release
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -15,25 +9,25 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Find .whl files
         id: find_whl
         run: |
-          find dist -type f -name "*.whl" -printf "%p\n" > to_release.txt
+          find dist -type f -name "*.whl" -printf "%p\n" > whl_files.txt
 
       - name: Read file paths
         id: read_files
         run: |
-          echo "::set-output name=files::$(cat to_release.txt)"
+          echo "$(cat whl_files.txt)" >> $GITHUB_STATE/files.txt
 
-      - name: Get Name and Version
-        id: get_name_version
+      - name: Get Release Name and Version
+        id: get_release_name_version
         run: |
           NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
           VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
           RELEASE_NAME="$NAME $VERSION"
-          echo "::set-output name=release_name::$RELEASE_NAME"
+          echo "$RELEASE_NAME" >> $GITHUB_OUTPUT/release_name.txt
 
       - name: Create Release
         id: create_release
@@ -42,7 +36,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          release_name: ${{ steps.get_name_version.outputs.release_name }}
+          release_name: $(cat $GITHUB_OUTPUT/release_name.txt)
           draft: true
           prerelease: false
-          files: ${{ steps.read_files.outputs.files }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: $(cat $GITHUB_STATE/files.txt)
+          asset_name: $(cat $GITHUB_OUTPUT/release_name.txt)
+          asset_content_type: application/octet-stream
