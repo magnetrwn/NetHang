@@ -27,7 +27,7 @@ jobs:
         run: |
           NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
           VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
-          RELEASE_NAME="$NAME $VERSION"
+          RELEASE_NAME="$NAME v$VERSION"
           echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
 
       - name: Create Release
@@ -38,7 +38,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: ${{ steps.get_release_name_version.outputs.name }}
-          draft: true
+          draft: false
           prerelease: false
 
       - name: Upload Release Asset
