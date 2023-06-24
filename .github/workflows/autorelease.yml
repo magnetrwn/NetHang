@@ -20,7 +20,7 @@ jobs:
       - name: Read file path
         id: read_files
         run: |
-          echo "release_file=$(head -n 1 $(find dist -type f -name "*.whl" -printf "%p\n"))" >> $GITHUB_OUTPUT
+          echo "release_file=$(find dist -name "*.whl")" >> $GITHUB_OUTPUT
 
       - name: Get Release Name and Version
         id: get_release_name_version
