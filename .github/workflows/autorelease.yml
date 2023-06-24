@@ -1,0 +1,48 @@
+name: Create Release
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Find .whl files
+        id: find_whl
+        run: |
+          find dist -type f -name "*.whl" -printf "%p\n" > to_release.txt
+
+      - name: Read file paths
+        id: read_files
+        run: |
+          echo "::set-output name=files::$(cat to_release.txt)"
+
+      - name: Get Name and Version
+        id: get_name_version
+        run: |
+          NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
+          VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
+          RELEASE_NAME="$NAME $VERSION"
+          echo "::set-output name=release_name::$RELEASE_NAME"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: ${{ steps.get_name_version.outputs.release_name }}
+          draft: true
+          prerelease: false
+          files: ${{ steps.read_files.outputs.files }}

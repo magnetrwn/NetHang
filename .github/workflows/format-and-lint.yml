@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -48,4 +48,4 @@ jobs:
           pip install pylint
 
       - name: Run pylint
-        run: pylint . --recursive=y
+        run: pylint . --recursive=y --fail-under=9
