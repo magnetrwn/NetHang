@@ -17,36 +17,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Read file path
-        id: read_files
-        run: |
-          echo "release_file=$(find dist -name "*.whl")" >> $GITHUB_OUTPUT
-
-      - name: Get Release Name and Version
-        id: get_release_name_version
+      - name: Get Release Title
+        id: get_title
         run: |
           NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
           VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
-          RELEASE_NAME="$NAME v$VERSION"
-          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "title=$NAME v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Development Release
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          tag_name: v${{ github.run_number }}
-          release_name: ${{ steps.get_release_name_version.outputs.name }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.read_files.outputs.release_file }}
-          asset_name: ${{ steps.get_release_name_version.outputs.name }}
-          asset_content_type: application/octet-stream
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "${{ steps.get_title.outputs.title }}"
+          files: |
+            LICENSE
+            README.md
+            dist/*
