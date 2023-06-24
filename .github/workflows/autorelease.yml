@@ -17,15 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Find .whl files
-        id: find_whl
-        run: |
-          find dist -type f -name "*.whl" -printf "%p\n" > whl_files.txt
-
-      - name: Read file paths
+      - name: Read file path
         id: read_files
         run: |
-          echo "$(cat whl_files.txt)" >> $GITHUB_STATE/files.txt
+          echo "release_file=$(head -n 1 $(find dist -type f -name "*.whl" -printf "%p\n"))" >> $GITHUB_OUTPUT
 
       - name: Get Release Name and Version
         id: get_release_name_version
@@ -33,7 +28,7 @@ jobs:
           NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
           VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
           RELEASE_NAME="$NAME $VERSION"
-          echo "$RELEASE_NAME" >> $GITHUB_OUTPUT/release_name.txt
+          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
@@ -42,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          release_name: $(cat $GITHUB_OUTPUT/release_name.txt)
+          release_name: ${{ steps.get_release_name_version.outputs.name }}
           draft: true
           prerelease: false
 
@@ -52,6 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: $(cat $GITHUB_STATE/files.txt)
-          asset_name: $(cat $GITHUB_OUTPUT/release_name.txt)
+          asset_path: ${{ steps.read_files.outputs.release_file }}
+          asset_name: ${{ steps.get_release_name_version.outputs.name }}
           asset_content_type: application/octet-stream
