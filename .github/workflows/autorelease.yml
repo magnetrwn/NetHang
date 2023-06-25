@@ -22,13 +22,15 @@ jobs:
         run: |
           NAME=$(awk -F "=" '/name/ {print $2}' setup.cfg | tr -d '[:space:]')
           VERSION=$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
           echo "title=$NAME v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Development Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "dev"
+          automatic_release_tag: "${{ steps.get_title.outputs.version }} Pre"
           prerelease: true
           title: "${{ steps.get_title.outputs.title }}"
           files: |
