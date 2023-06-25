@@ -8,16 +8,10 @@ from random import randint
 from select import select
 from time import sleep, time
 
-from NetHang.game import HangmanGame, Command
+from NetHang.game import HangmanGame
 from NetHang.graphics import GRAPHICS, should_countdown
-from NetHang.players import Player, PlayerList, generate_rejoin_code
+from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
 from NetHang.util import load_yaml_dict
-
-
-def send_all(players, string, enc="latin-1"):
-    """Send all sockets the same message."""
-    for socket in players.get_sockets():
-        socket.send(string.encode(enc))
 
 
 # TODO: combo print + detail logging
@@ -231,6 +225,14 @@ class HangmanServer:
             for _ in range(2 * self.settings["new_conn_processes"]):
                 players_read_queue.put(players)
 
+            print(
+                "debug: \x1B[90mtimer is "
+                + str(start_timer)
+                + ", game is "
+                + str(game.is_alive())
+                + ".\x1B[0m"
+            )
+
             if not game.is_alive():
                 if start_timer is None:
                     # Game is done, new timer
@@ -246,7 +248,9 @@ class HangmanServer:
                     if should_countdown(start_timer):
                         send_all(
                             players,
-                            "\x1B[01;36mStarting in " + str(start_timer) + "\x1B[0m\n",
+                            "\r\x1B[01;36mStarting in "
+                            + str(start_timer)
+                            + "\x1B[0m\n",
                         )
                     start_timer -= 1
 
@@ -263,6 +267,7 @@ class HangmanServer:
                 break
 
             for socket in ready_sockets:
+                socket.settimeout(1)
                 player = players.get_player(socket=socket)
                 try:
                     data = socket.recv(256)
@@ -278,8 +283,8 @@ class HangmanServer:
 
                         # Send received string of decoded data to the commands queue
                         # of the game process, which will queue all requests by
-                        # time of reception
-                        game.commands_queue.put(Command(player, decoded_data))
+                        # time of reception, paired with the source player.
+                        game.commands_queue.put((player, decoded_data))
 
                         # send_all(
                         #     players,
@@ -289,6 +294,12 @@ class HangmanServer:
                     print("\x1B[33m" + player.nickname + " reset connection.\x1B[0m")
                     socket.close()
                     players.drop_player(nickname=player.nickname)
+                except BlockingIOError:
+                    print("\x1B[01;91mUnavailable socket.\x1B[0m")
+                    sleep(0.5 * self.settings["delay_factor"])
+                except TimeoutError:
+                    # Fixes hanging on game ended
+                    pass
 
         self.server_socket.close()
         print("\r\x1B[36mServer gracefully stopped.\n\x1B[0m")

@@ -9,6 +9,15 @@ def generate_rejoin_code():
     return str(randint(0, 9999)).zfill(4)
 
 
+def send_all(players, string, enc="latin-1"):
+    """Send all player sockets the same message, quiet fail."""
+    try:
+        for socket in players.get_sockets():
+            socket.send(string.encode(enc))
+    except (BrokenPipeError, BlockingIOError):
+        pass
+
+
 class Player:
     """Each Player combines a socket and a nickname, and can have an address or rejoin code."""
 
@@ -20,6 +29,7 @@ class Player:
             self.rejoin_code = generate_rejoin_code()
         else:
             self.rejoin_code = rejoin_code
+        self.score = 0
 
 
 class PlayerList:
@@ -31,6 +41,12 @@ class PlayerList:
     def count(self):
         """Get the number of players."""
         return len(self.player_list)
+
+    def copy(self):
+        """Copy and return new list location."""
+        new_pl = PlayerList()
+        new_pl.player_list = self.player_list.copy()
+        return new_pl
 
     def is_player(self, nickname=None, socket=None, address=None):
         """Check if there is a player with a certain nickname, socket or address."""
