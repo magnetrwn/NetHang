@@ -26,4 +26,12 @@ allow_same_source_ip: true
 # Duration of the pause between games, the value at which countdown starts
 lobby_time: 20
 
+# ------------------------------ game.py ----------------------------------
+
+# Number of rounds in one game
+rounds: 5
+
+# Number of turns in one round
+turns: 10
+
 # -------------------------------------------------------------------------

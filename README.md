@@ -3,7 +3,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 
-NetHang is a compact client-server Python game that allows you to play hangman online (in different gamemodes) by starting a server and allowing clients to connect using netcat (nc) or any other TCP client.
+Hangman client-server game package (and soon library for client-server multiplayer lobby games), written in Python using no external libraries for maximum compatibility. Clients can use any TCP socket application (e.g. nc) to connect and play!
 
 ### Asciinema Demo
 
@@ -11,7 +11,7 @@ NetHang is a compact client-server Python game that allows you to play hangman o
 
 You have two options for installation:
 
-+ **Download the Wheel**: Grab the pre-built wheel file (`NetHang-<version>-py3-none-any.whl`) from the `dist` directory.
++ **Download the Wheel**: Grab the pre-built wheel file (`NetHang-<version>-py3-none-any.whl`) from the latest release.
 + **Manual Installation**: Run `make install` from the command line to install the application yourself.
 
 ## Usage

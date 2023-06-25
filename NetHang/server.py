@@ -203,7 +203,7 @@ class HangmanServer:
             ).start()
 
         # TODO: add choice to manually start game, like in the readme import example
-        game = HangmanGame()
+        game = HangmanGame(options=(self.settings["rounds"], self.settings["turns"]))
 
         # start_timer determines if game is on or not:
         #   an integer if not, value is seconds countdown

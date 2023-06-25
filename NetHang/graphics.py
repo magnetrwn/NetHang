@@ -7,12 +7,12 @@ def should_countdown(number):
 
 
 def string_to_masked(string, to_show):
-    """Return the input string wrapped, colorized and masked."""
+    """Return the input string wrapped, colorized and masked. Use lowercase for list to_show."""
     out = ""
     for i, strchar in enumerate(string):
         if (i + 1) % 48 == 0:
             out += "-\n-"
-        if strchar in to_show or not strchar.isalpha():
+        if strchar.lower() in to_show or not strchar.isalpha():
             out += "\x1B[01;36m" + strchar + "\x1B[0m"
         else:
             out += "."
