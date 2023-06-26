@@ -42,9 +42,11 @@ You can \x1B[01;36mquit\x1B[0m at any moment with \x1B[01;36m^C\x1B[0m (Ctrl-C).
 
 
 
+
          [ 0/9     ]
 """,
     "hangman1": """
+
 
 |
 |

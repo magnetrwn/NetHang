@@ -128,7 +128,7 @@ class HangmanRound:
             self.players,
             "\x1B[01;36mSCORE\x1B[0m\n"
             + str(self.players.scoreboard())
-            + "\n\nLAST GUESS\n\n",
+            + "\n\n\x1B[01;36mLAST GUESS\x1B[0m\n\n",
         )
 
         while self.fails <= 9 and not is_guessed(word, self.tried_letters):
@@ -234,7 +234,7 @@ class HangmanTurn:
                 self.fails += 1
                 send_all(
                     self.guessers,
-                    'LAST GUESS\n\x1B[01;36m"'
+                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
                     + letter.upper()
                     + '"\x1B[0m: \x1B[91mno!\x1B[0m\n',
                 )
@@ -242,7 +242,7 @@ class HangmanTurn:
             else:
                 send_all(
                     self.guessers,
-                    'LAST GUESS\n\x1B[01;36m"'
+                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
                     + letter.upper()
                     + '"\x1B[0m: \x1B[92myes!\x1B[0m\n',
                 )
