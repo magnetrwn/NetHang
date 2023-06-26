@@ -104,3 +104,7 @@ class PlayerList:
                 if player.socket == socket:
                     del self.player_list[i]
                     break
+
+    def scoreboard(self):
+        """Get a dict of players and scores."""
+        return {player.nickname: player.score for player in self.player_list}

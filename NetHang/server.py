@@ -203,7 +203,7 @@ class HangmanServer:
             ).start()
 
         # TODO: add choice to manually start game, like in the readme import example
-        game = HangmanGame(options=(self.settings["rounds"], self.settings["turns"]))
+        game = HangmanGame(rounds=self.settings["rounds"])
 
         # start_timer determines if game is on or not:
         #   an integer if not, value is seconds countdown
@@ -224,14 +224,6 @@ class HangmanServer:
                 players_read_queue.get()
             for _ in range(2 * self.settings["new_conn_processes"]):
                 players_read_queue.put(players)
-
-            print(
-                "debug: \x1B[90mtimer is "
-                + str(start_timer)
-                + ", game is "
-                + str(game.is_alive())
-                + ".\x1B[0m"
-            )
 
             if not game.is_alive():
                 if start_timer is None:
