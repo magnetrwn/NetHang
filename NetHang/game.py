@@ -9,7 +9,7 @@ from NetHang.players import PlayerList, send_all
 
 def is_guessed(word, arr):
     """Check if the array has all of the word letters."""
-    for _, strchar in enumerate(word):
+    for _, strchar in enumerate(word.lower()):
         if not strchar.isalpha():
             continue
         if strchar not in arr:
@@ -126,7 +126,9 @@ class HangmanRound:
         send_all(self.players, GRAPHICS["clear"])
         send_all(
             self.players,
-            "SCORE\n" + str(self.players.scoreboard()) + "\n\nLAST GUESS\n\n",
+            "\x1B[01;36mSCORE\x1B[0m\n"
+            + str(self.players.scoreboard())
+            + "\n\nLAST GUESS\n\n",
         )
 
         while self.fails <= 9 and not is_guessed(word, self.tried_letters):
@@ -179,14 +181,16 @@ class HangmanTurn:
         for guesser in self.guessers.player_list:
             send_all(
                 self.players,
-                "\n\nGUESSWORD\n"
+                "\n\n\x1B[01;36mGUESSWORD\x1B[0m\n"
                 + string_to_masked(self.word, self.tried_letters)
                 + "\n",
             )
 
             send_all(
                 self.players,
-                "\nHANGER\n" + GRAPHICS["hangman" + str(self.fails)[0]] + "\n\n",
+                "\n\x1B[01;36mHANGER\x1B[0m\n"
+                + GRAPHICS["hangman" + str(self.fails)[0]]
+                + "\n\n",
             )
 
             other_players = self.players.copy()
@@ -211,14 +215,17 @@ class HangmanTurn:
                 break
 
             send_all(self.players, GRAPHICS["clear"])
-            send_all(self.players, "SCORE\n" + str(self.players.scoreboard()) + "\n\n")
+            send_all(
+                self.players,
+                "\x1B[01;36mSCORE\x1B[0m\n" + str(self.players.scoreboard()) + "\n\n",
+            )
 
             # Assign weighted scoring for each guess
             if letter in self.tried_letters:
                 self.fails += 1
                 send_all(
                     self.guessers,
-                    'LAST GUESS\n\x1B[01;36m"'
+                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
                     + letter.upper()
                     + '"\x1B[0m: \x1B[91mguessed already!\x1B[0m\n',
                 )
