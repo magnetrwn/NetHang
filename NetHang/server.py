@@ -110,6 +110,7 @@ class HangmanServer:
                     )
                     client_socket.close()
                     continue
+                # TODO: add banned IP list here and in yaml
 
                 while True:
                     client_socket.settimeout(1)
@@ -258,6 +259,8 @@ class HangmanServer:
                 running.value = 0
                 break
 
+            # Server manages all incoming data efficiently into a SimpleQueue of command tuples
+            # Outgoing data is not centralized, using socket.send()
             for socket in ready_sockets:
                 socket.settimeout(1)
                 player = players.get_player(socket=socket)
@@ -267,6 +270,10 @@ class HangmanServer:
                         print("\x1B[36m" + player.nickname + " left\x1B[0m")
                         socket.close()
                         players.drop_player(nickname=player.nickname)
+                        # Send a command from server management player (nickname="."), telling "-player"
+                        game.commands_queue.put(
+                            (Player(None, "."), "-" + player.nickname)
+                        )
                     else:
                         try:
                             decoded_data = data[:-1].decode("latin-1")
@@ -276,16 +283,27 @@ class HangmanServer:
                         # Send received string of decoded data to the commands queue
                         # of the game process, which will queue all requests by
                         # time of reception, paired with the source player.
-                        game.commands_queue.put((player, decoded_data))
+                        if game.is_alive():
+                            game.commands_queue.put((player, decoded_data))
 
-                        # send_all(
-                        #     players,
-                        #     "\x1B[90m<" + player.nickname + ">:\x1B[0m " + decoded_data,
-                        # )
+                        else:
+                            other_players = players.copy()
+                            other_players.drop_player(nickname=player.nickname)
+                            send_all(
+                                other_players,
+                                "\x1B[90m<"
+                                + player.nickname
+                                + ">:\x1B[0m "
+                                + decoded_data.replace(
+                                    "\n", "\x1B[90m<" + player.nickname + ">:\x1B[0m "
+                                )
+                                + "\n",
+                            )
                 except ConnectionResetError:
                     print("\x1B[33m" + player.nickname + " reset connection.\x1B[0m")
                     socket.close()
                     players.drop_player(nickname=player.nickname)
+                    game.commands_queue.put((Player(None, "."), "-" + player.nickname))
                 except BlockingIOError:
                     print("\x1B[01;91mUnavailable socket.\x1B[0m")
                     sleep(0.5 * self.settings["delay_factor"])

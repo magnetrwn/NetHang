@@ -85,40 +85,25 @@ class HangmanRound:
         self._round_loop()
 
     def _round_loop(self):
-        # TODO: duplicate code from server.py
         send_all(
             self.guessers,
             "\x1B[01;36mWaiting for " + self.hanger.nickname + "...\x1B[0m\n",
         )
+
+        self.hanger.socket.send(
+            "You are the hanger, type the guessword: ".encode("latin-1")
+        )
         while True:
-            self.hanger.socket.settimeout(1)
-            try:
-                while True:
-                    dirty = self.hanger.socket.recv(512)
-                    if not dirty:
-                        break
-            except TimeoutError:
-                pass
-            self.hanger.socket.settimeout(None)
-            word = ""
-
-            try:
-                self.hanger.socket.send(
-                    "You are the hanger, type your word: ".encode("latin-1")
-                )
-                word = self.hanger.socket.recv(81)[:-1].decode("latin-1")
-            except UnicodeDecodeError:
-                self.hanger.socket.send(
-                    "Please only use latin-1 characters!\n".encode("latin-1")
-                )
-                continue
-            except BrokenPipeError:
-                print("\x1B[01;91mBroken Pipe.\x1B[0m")
-                return
-
+            command = self.commands_queue.get()
+            while command[0].nickname != self.hanger.nickname:
+                if command[0].nickname == ".":
+                    if command[1][0] == "-":
+                        return
+                command = self.commands_queue.get()
+            word = command[1]
             if len(word) < 2 or len(word) > 80:
                 self.hanger.socket.send(
-                    "Only between 2 and 80 characters!\n".encode("latin-1")
+                    "Between 2 and 80 characters only:  ".encode("latin-1")
                 )
                 continue
             break
@@ -181,7 +166,7 @@ class HangmanTurn:
         for guesser in self.guessers.player_list:
             send_all(
                 self.players,
-                "\n\n\x1B[01;36mGUESSWORD\x1B[0m\n"
+                "\n\x1B[01;36mGUESSWORD\x1B[0m\n"
                 + string_to_masked(self.word, self.tried_letters)
                 + "\n",
             )
@@ -196,7 +181,6 @@ class HangmanTurn:
             other_players = self.players.copy()
             other_players.drop_player(nickname=guesser.nickname)
             send_all(other_players, guesser.nickname + "'s guess...\n")
-            # TODO: no memory leaks, right?
 
             guesser.socket.send(
                 "\x1B[01;36mIt's your turn! Your guess: \x1B[0m".encode("latin-1")
@@ -206,50 +190,69 @@ class HangmanTurn:
             while True:
                 command = self.commands_queue.get()
                 while command[0].nickname != guesser.nickname:
-                    command[0].socket.send("Wait for your turn!\n".encode("latin-1"))
                     command = self.commands_queue.get()
                 letter = command[1].lower()
-                if len(letter) == 0 or len(letter) > 1:
-                    guesser.socket.send("\n> ".encode("latin-1"))
+                if len(letter) != 1 and len(letter) != len(self.word):
+                    guesser.socket.send(
+                        "Only guess letters or the entire word: ".encode("latin-1")
+                    )
                     continue
                 break
 
+            last_guess = ""
+
+            if len(letter) == 1:
+                # Assign weighted scoring for each letter guess, and build last guess string
+                if letter in self.tried_letters:
+                    self.fails += 1
+                    last_guess = (
+                        '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
+                        + letter.upper()
+                        + '"\x1B[0m: \x1B[91mguessed already!\x1B[0m\n'
+                    )
+                    guesser.score -= 5 + (guesser.score // 10)
+                elif letter not in self.word.lower():
+                    self.fails += 1
+                    last_guess = (
+                        '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
+                        + letter.upper()
+                        + '"\x1B[0m: \x1B[91mno!\x1B[0m\n'
+                    )
+                    guesser.score -= 12 + (guesser.score // 20)
+                else:
+                    last_guess = (
+                        '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
+                        + letter.upper()
+                        + '"\x1B[0m: \x1B[92myes!\x1B[0m\n'
+                    )
+                    guesser.score += 50 // max(1, guesser.score // 500)
+
+                if letter not in self.tried_letters:
+                    self.tried_letters.append(letter)
+
+            else:
+                # Scoring for entire word guesses
+                if letter == self.word:
+                    guesser.score += 200
+                    self.tried_letters += list(self.word)
+                else:
+                    self.fails += 1
+                    last_guess = (
+                        '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[91m"'
+                        + letter
+                        + '"\x1B[0m\n'
+                    )
+                    guesser.score -= 200 + (guesser.score // 5)
+
+            # Clear screen and print scores
             send_all(self.players, GRAPHICS["clear"])
             send_all(
                 self.players,
                 "\x1B[01;36mSCORE\x1B[0m\n" + str(self.players.scoreboard()) + "\n\n",
             )
 
-            # Assign weighted scoring for each guess
-            if letter in self.tried_letters:
-                self.fails += 1
-                send_all(
-                    self.guessers,
-                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
-                    + letter.upper()
-                    + '"\x1B[0m: \x1B[91mguessed already!\x1B[0m\n',
-                )
-                guesser.score -= 5 + (guesser.score // 10)
-            elif letter not in self.word.lower():
-                self.fails += 1
-                send_all(
-                    self.guessers,
-                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
-                    + letter.upper()
-                    + '"\x1B[0m: \x1B[91mno!\x1B[0m\n',
-                )
-                guesser.score -= 12 + (guesser.score // 20)
-            else:
-                send_all(
-                    self.guessers,
-                    '\x1B[01;36mLAST GUESS\x1B[0m\n\x1B[01;36m"'
-                    + letter.upper()
-                    + '"\x1B[0m: \x1B[92myes!\x1B[0m\n',
-                )
-                guesser.score += 50 // max(1, guesser.score // 500)
-
-            if letter not in self.tried_letters:
-                self.tried_letters.append(letter)
+            # Print the latest guessed letter or word, as string-fied above
+            send_all(self.guessers, last_guess)
 
             self.update_stats(tried_letters=self.tried_letters, fails=self.fails)
 
