@@ -295,7 +295,7 @@ class HangmanServer:
                                 + player.nickname
                                 + ">:\x1B[0m "
                                 + decoded_data.replace(
-                                    "\n", "\x1B[90m<" + player.nickname + ">:\x1B[0m "
+                                    "\n", "\n\x1B[90m<" + player.nickname + ">:\x1B[0m "
                                 )
                                 + "\n",
                             )
