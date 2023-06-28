@@ -5,6 +5,7 @@ from multiprocessing import Process, SimpleQueue
 
 from NetHang.graphics import GRAPHICS, string_to_masked
 from NetHang.players import PlayerList, send_all
+from NetHang.util import timeout_in, timeout_kill
 
 
 def is_guessed(word, arr):
@@ -26,7 +27,6 @@ class HangmanGame:
         self.rounds = rounds
         self.game_process = None
 
-    # TODO: catching on KeyboardInterrupt'd server
     def _game_loop(self, players, commands_queue):
         send_all(players, "\x1B[01;36mGame started.\x1B[0m\n")
         hanger, prev_hanger = None, None
@@ -85,55 +85,66 @@ class HangmanRound:
         self._round_loop()
 
     def _round_loop(self):
-        send_all(
-            self.guessers,
-            "\x1B[01;36mWaiting for " + self.hanger.nickname + "...\x1B[0m\n",
-        )
-
-        self.hanger.socket.send(
-            "You are the hanger, type the guessword: ".encode("latin-1")
-        )
-        while True:
-            command = self.commands_queue.get()
-            while command[0].nickname != self.hanger.nickname:
-                if command[0].nickname == ".":
-                    if command[1][0] == "-":
-                        return
-                command = self.commands_queue.get()
-            word = command[1]
-            if len(word) < 2 or len(word) > 80:
-                self.hanger.socket.send(
-                    "Between 2 and 80 characters only:  ".encode("latin-1")
-                )
-                continue
-            break
-
-        send_all(self.players, GRAPHICS["clear"])
-        send_all(
-            self.players,
-            "\x1B[01;36mSCORE\x1B[0m\n"
-            + str(self.players.scoreboard())
-            + "\n\n\x1B[01;36mLAST GUESS\x1B[0m\n\n",
-        )
-
-        while self.fails <= 9 and not is_guessed(word, self.tried_letters):
-            HangmanTurn(
-                word,
-                self.players,
+        try:
+            send_all(
                 self.guessers,
-                self.commands_queue,
-                self.get_stats,
-                self.update_stats,
+                "\x1B[01;36mWaiting for " + self.hanger.nickname + "...\x1B[0m\n",
             )
 
-        send_all(
-            self.players, '\n\n\n\x1B[01;36mThe word was "' + word + '"\x1B[0m\n\n\n'
-        )
+            self.hanger.socket.send(
+                "You are the hanger, type the guessword: ".encode("latin-1")
+            )
 
-        if self.fails <= 9:
-            send_all(self.players, "\n\x1B[01;92mGuessers win!\x1B[0m\n")
-        else:
-            send_all(self.players, "\n\x1B[01;91mGuessers lose!\x1B[0m\n")
+            while True:
+                command = self.commands_queue.get()
+                while command[0].nickname != self.hanger.nickname:
+                    if command[0].nickname == ".":
+                        if command[1][0] == "-":
+                            return
+                    command = self.commands_queue.get()
+                word = command[1]
+                if len(word) < 2 or len(word) > 80:
+                    self.hanger.socket.send(
+                        "Between 2 and 80 characters only:  ".encode("latin-1")
+                    )
+                    continue
+                break
+
+            send_all(self.players, GRAPHICS["clear"])
+            send_all(
+                self.players,
+                "\x1B[01;36mSCORE\x1B[0m\n"
+                + str(self.players.scoreboard())
+                + "\n\n\x1B[01;36mLAST GUESS\x1B[0m\n\n",
+            )
+
+            while self.fails <= 9 and not is_guessed(word, self.tried_letters):
+                HangmanTurn(
+                    word,
+                    self.players,
+                    self.guessers,
+                    self.commands_queue,
+                    self.get_stats,
+                    self.update_stats,
+                )
+
+            send_all(
+                self.players,
+                '\n\n\n\x1B[01;36mThe word was "' + word + '"\x1B[0m\n\n\n',
+            )
+
+            if self.fails <= 9:
+                send_all(self.players, "\n\x1B[01;92mGuessers win!\x1B[0m\n")
+            else:
+                send_all(self.players, "\n\x1B[01;91mGuessers lose!\x1B[0m\n")
+
+        except (BrokenPipeError, BlockingIOError):
+            print("\x1B[01;91mUnavailable socket. Stopping ongoing game.\x1B[0m")
+            send_all(
+                self.players,
+                "\n\x1B[01;91mUnavailable socket. Stopping ongoing game.\n\x1B[0m",
+            )
+            return
 
     def get_stats(self):
         """Pass this function to turn to give stats."""
@@ -183,23 +194,32 @@ class HangmanTurn:
             send_all(other_players, guesser.nickname + "'s guess...\n")
 
             guesser.socket.send(
-                "\x1B[01;36mIt's your turn! Your guess: \x1B[0m".encode("latin-1")
+                "\x1B[01;36mIt's your turn! You have 60 seconds: \x1B[0m".encode(
+                    "latin-1"
+                )
             )
 
-            # TODO: whole string guessing, not just letters
-            while True:
-                command = self.commands_queue.get()
-                while command[0].nickname != guesser.nickname:
+            timeout_in(60)
+            try:
+                while True:
                     command = self.commands_queue.get()
-                letter = command[1].lower()
-                if len(letter) != 1 and len(letter) != len(self.word):
-                    guesser.socket.send(
-                        "Only guess letters or the entire word: ".encode("latin-1")
-                    )
-                    continue
-                break
+                    while command[0].nickname != guesser.nickname:
+                        if command[0].nickname == ".":
+                            if command[1][0] == "-":
+                                return
+                        command = self.commands_queue.get()
+                    letter = command[1].lower()
+                    if len(letter) != 1 and len(letter) != len(self.word):
+                        guesser.socket.send(
+                            "Only guess letters or the entire word: ".encode("latin-1")
+                        )
+                        continue
+                    break
+            except TimeoutError:
+                continue
+            timeout_kill()
 
-            last_guess = ""
+            last_guess = " "
 
             if len(letter) == 1:
                 # Assign weighted scoring for each letter guess, and build last guess string
@@ -232,9 +252,9 @@ class HangmanTurn:
 
             else:
                 # Scoring for entire word guesses
-                if letter == self.word:
+                if letter == self.word.lower():
                     guesser.score += 200
-                    self.tried_letters += list(self.word)
+                    self.tried_letters += list(self.word.lower())
                 else:
                     self.fails += 1
                     last_guess = (
@@ -258,7 +278,3 @@ class HangmanTurn:
 
             if self.fails == 10 or is_guessed(self.word, self.tried_letters):
                 break
-
-
-# TODO: This file can be expanded with more games, not just related
-#       to hangman! A project focus change is in order!

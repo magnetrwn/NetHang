@@ -23,8 +23,11 @@ delay_factor: 1.0
 # Allow two or more users from the same source IP address
 allow_same_source_ip: true
 
+# Blacklist of IP addresses on server startup
+blacklisted: null
+
 # Duration of the pause between games, the value at which countdown starts
-lobby_time: 30
+lobby_time: 90
 
 # ------------------------------ game.py ----------------------------------
 

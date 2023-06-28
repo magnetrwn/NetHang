@@ -11,20 +11,17 @@ from time import sleep, time
 from NetHang.game import HangmanGame
 from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
-from NetHang.util import load_yaml_dict
+from NetHang.util import load_yaml_dict, prettify_time
 
 
-# TODO: combo print + detail logging
 class HangmanServer:
     """Contains all methods to run the game server for hangman."""
 
     def __init__(self, server_address, priority_settings=None, bypass_yaml=False):
-        # For binding & listening new server socket -> _setup_server()
         self.server_address = server_address
         self.server_port = None
         self.server_socket = None
 
-        # For the underlying server process run -> _run_worker()
         self.server_process = None
         self.running = Value("B", 0)
 
@@ -43,9 +40,7 @@ class HangmanServer:
             + " max clients."
         )
 
-    # TODO: make settings a class dict, not separate variables
     def _setup_settings(self, priority_settings, bypass_yaml):
-        # Loading settings.yaml
         file_settings_path = path.join(
             path.dirname(path.abspath(__file__)), "config", "settings.yml"
         )
@@ -95,22 +90,18 @@ class HangmanServer:
     ):
         """Worker daemon process that accepts new client connections."""
         while True:
-            # TODO: stop extra processes on full capacity lobby
             try:
                 client_socket, client_addr_port = server_socket.accept()
                 client_address = client_addr_port[0]
                 sleep(0.5 * self.settings["delay_factor"])
                 client_socket.send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
-                if not self.settings[
-                    "allow_same_source_ip"
-                ] and worker_players.is_player(address=client_address):
-                    client_socket.send(
-                        "This client IP is already in use!\n".encode("latin-1")
-                    )
+                rejoined = False
+
+                if client_address in (self.settings["blacklisted"] or []):
+                    client_socket.send("This client IP is banned!\n".encode("latin-1"))
                     client_socket.close()
                     continue
-                # TODO: add banned IP list here and in yaml
 
                 while True:
                     client_socket.settimeout(1)
@@ -126,19 +117,24 @@ class HangmanServer:
                     client_nickname = ""
                     client_socket.send("Nickname: ".encode("latin-1"))
 
-                    try:
-                        client_nickname = client_socket.recv(33)[:-1].decode("latin-1")
-                        if worker_players.is_player(nickname=client_nickname):
-                            client_socket.send(
-                                "This nickname is already in use!\n".encode("latin-1")
-                                # TODO: allow reconnections for disconnected users
-                                # "Rejoining as this user? Code: \n".encode("latin-1")
-                            )
-                            continue
-                    except UnicodeDecodeError:
+                    client_nickname = client_socket.recv(34)[:-1].decode("latin-1")
+                    if worker_players.is_player(nickname=client_nickname):
                         client_socket.send(
-                            "Please only use latin-1 characters!\n".encode("latin-1")
+                            "Rejoining as this user? Code: ".encode("latin-1")
                         )
+                        input_code = client_socket.recv(5)[:-1].decode("latin-1")
+                        if (
+                            input_code
+                            == worker_players.get_player(
+                                nickname=client_nickname
+                            ).rejoin_code
+                        ):
+                            client_socket.send("Welcome back!\n".encode("latin-1"))
+                            worker_players.get_player(
+                                nickname=client_nickname
+                            ).socket.close()
+                            rejoined = True
+                            break
                         continue
 
                     if (
@@ -155,33 +151,50 @@ class HangmanServer:
 
                     break
 
-                # TODO: redundant, but needed to check if users have changed
-                worker_players = players_read_queue.get()
-                if not self.settings[
-                    "allow_same_source_ip"
-                ] and worker_players.is_player(address=client_address):
-                    client_socket.send(
-                        "This client IP is already in use!\n".encode("latin-1")
-                    )
-                    client_socket.close()
-                    continue
+                if not rejoined:
+                    worker_players = players_read_queue.get()
+                    if not self.settings[
+                        "allow_same_source_ip"
+                    ] and worker_players.is_player(address=client_address):
+                        client_socket.send(
+                            "This client IP is already in use!\n".encode("latin-1")
+                        )
+                        client_socket.close()
+                        continue
 
-                rejoin_code = generate_rejoin_code()
-                players_write_queue.put(
-                    Player(
-                        client_socket,
-                        client_nickname,
-                        address=client_address,
-                        rejoin_code=rejoin_code,
+                if rejoined:
+                    players_write_queue.put(
+                        Player(
+                            client_socket,
+                            client_nickname,
+                            address=client_address,
+                            rejoin_code=worker_players.get_player(
+                                nickname=client_nickname
+                            ).rejoin_code,
+                        )
                     )
-                )
-                client_socket.send(GRAPHICS["opening"].encode("latin-1"))
-                client_socket.send(
-                    (
-                        "Your rejoin code is \x1B[01;91m" + rejoin_code + "\x1B[0m.\n\n"
-                    ).encode("latin-1")
-                )
-                print("\x1B[36m" + client_nickname + " joined\x1B[0m")
+                    print("\x1B[33m" + client_nickname + " rejoined\x1B[0m")
+                else:
+                    rejoin_code = generate_rejoin_code()
+                    players_write_queue.put(
+                        Player(
+                            client_socket,
+                            client_nickname,
+                            address=client_address,
+                            rejoin_code=rejoin_code,
+                        )
+                    )
+                    client_socket.send(GRAPHICS["opening"].encode("latin-1"))
+                    client_socket.send(
+                        (
+                            "Your rejoin code is \x1B[01;91m"
+                            + rejoin_code
+                            + "\x1B[0m.\nLobby time is \x1B[01;36m"
+                            + prettify_time(self.settings["lobby_time"])
+                            + "\x1B[0m.\n\n"
+                        ).encode("latin-1")
+                    )
+                    print("\x1B[36m" + client_nickname + " joined\x1B[0m")
 
             except BrokenPipeError:
                 sleep(0.5 * self.settings["delay_factor"])
@@ -203,7 +216,6 @@ class HangmanServer:
                 daemon=True,
             ).start()
 
-        # TODO: add choice to manually start game, like in the readme import example
         game = HangmanGame(rounds=self.settings["rounds"])
 
         # start_timer determines if game is on or not:
@@ -220,7 +232,10 @@ class HangmanServer:
                     running.value = 0
 
             while not players_write_queue.empty():
-                players.add_player(players_write_queue.get())
+                got_player = players_write_queue.get()
+                if players.is_player(nickname=got_player.nickname):
+                    players.drop_player(nickname=got_player.nickname)
+                players.add_player(got_player)
             while not players_read_queue.empty():
                 players_read_queue.get()
             for _ in range(2 * self.settings["new_conn_processes"]):
