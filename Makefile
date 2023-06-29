@@ -2,14 +2,18 @@
 clean:
 	rm -rf dist *.egg-info
 
+.PHONY: requirements
+requirements:
+	pip3 install -r requirements.txt
+
 .PHONY: test
-test: clean
+test: clean requirements
 	pytest
 
 .PHONY: build
-build: clean
+build: clean requirements
 	python3 -m build
 
 .PHONY: install
-install: clean build
+install: build
 	pip3 install --force-reinstall dist/*.whl
