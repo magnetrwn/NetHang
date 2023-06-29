@@ -6,6 +6,7 @@
 Hangman client-server game package (and soon library for client-server multiplayer lobby games), written in Python using no external libraries for maximum compatibility. Clients can use any TCP socket application (e.g. nc) to connect and play!
 
 ## Asciinema Demo
+
 [![asciicast](https://asciinema.org/a/593263.svg)](https://asciinema.org/a/593263)
 
 ## Installation

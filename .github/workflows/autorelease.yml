@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+  # trunk-ignore(yamllint/empty-values)
   workflow_dispatch:
 
 jobs:
@@ -27,7 +28,7 @@ jobs:
           echo "title=$NAME v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Development Release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "${{ steps.get_title.outputs.version }}"

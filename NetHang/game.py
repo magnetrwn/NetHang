@@ -222,7 +222,7 @@ class HangmanTurn:
             last_guess = " "
 
             if len(letter) == 1:
-                # Assign weighted scoring for each letter guess, and build last guess string
+                # Assign weighted scoring for each letter guess, and last guess string
                 if letter in self.tried_letters:
                     self.fails += 1
                     last_guess = (

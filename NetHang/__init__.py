@@ -1,3 +1,5 @@
+"""Import wrapper calls to library."""
+
 # Class for server handling
 from NetHang.server import HangmanServer
 
