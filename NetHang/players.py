@@ -21,7 +21,7 @@ def send_all(players, string, enc="latin-1"):
 class Player:
     """Each Player combines a socket and a nickname, and can have an address or rejoin code."""
 
-    def __init__(self, socket, nickname, address=None, rejoin_code=None):
+    def __init__(self, socket, nickname, address=None, rejoin_code=None, score=None):
         self.socket = socket
         self.nickname = nickname
         self.address = address
@@ -29,7 +29,7 @@ class Player:
             self.rejoin_code = generate_rejoin_code()
         else:
             self.rejoin_code = rejoin_code
-        self.score = 0
+        self.score = score or 0
 
 
 class PlayerList:

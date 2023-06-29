@@ -3,7 +3,20 @@
 
 def should_countdown(number):
     """Countdown values should be printed if here"""
-    return number in [1, 2, 3, 4, 5, 10, 15, 30, 45, 60, 90, 120, 180, 300]
+    return number in [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        90.0,
+        120.0,
+        180.0,
+        300.0,
+    ]
 
 
 def string_to_masked(string, to_show):

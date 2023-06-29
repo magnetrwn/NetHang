@@ -36,22 +36,3 @@ def cli_run():
 def cli_stop(server):
     """Stop server"""
     server.stop()
-
-
-# def temp_run(port):
-#     """Run temporary server on localhost"""
-#     server = HangmanServer(
-#         "localhost",
-#         settings={
-#             "avail_ports": [port],
-#             "allow_same_source_ip": True,
-#             "delay_factor": 0,
-#         },
-#     )
-#     server.run()
-#     return server
-
-
-# def temp_stop(server):
-#     """Stop temporary server on localhost"""
-#     server.stop()

@@ -97,6 +97,7 @@ class HangmanServer:
                 client_socket.send(GRAPHICS["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
                 rejoined = False
+                old_player = None
 
                 if client_address in (self.settings["blacklisted"] or []):
                     client_socket.send("This client IP is banned!\n".encode("latin-1"))
@@ -104,7 +105,7 @@ class HangmanServer:
                     continue
 
                 while True:
-                    client_socket.settimeout(1)
+                    client_socket.settimeout(0.08 + self.settings["delay_factor"])
                     try:
                         while True:
                             sleep(0.25 * self.settings["delay_factor"])
@@ -123,19 +124,15 @@ class HangmanServer:
                             "Rejoining as this user? Code: ".encode("latin-1")
                         )
                         input_code = client_socket.recv(5)[:-1].decode("latin-1")
-                        if (
-                            input_code
-                            == worker_players.get_player(
-                                nickname=client_nickname
-                            ).rejoin_code
-                        ):
+                        old_player = worker_players.get_player(nickname=client_nickname)
+                        if input_code == old_player.rejoin_code:
                             client_socket.send("Welcome back!\n".encode("latin-1"))
-                            worker_players.get_player(
-                                nickname=client_nickname
-                            ).socket.close()
+                            old_player.socket.shutdown(so.SHUT_RDWR)
+                            old_player.socket.close()
                             rejoined = True
                             break
-                        continue
+                        client_socket.close()
+                        raise RuntimeError
 
                     if (
                         not client_nickname.isalnum()
@@ -160,7 +157,7 @@ class HangmanServer:
                             "This client IP is already in use!\n".encode("latin-1")
                         )
                         client_socket.close()
-                        continue
+                        raise RuntimeError
 
                 if rejoined:
                     players_write_queue.put(
@@ -168,9 +165,8 @@ class HangmanServer:
                             client_socket,
                             client_nickname,
                             address=client_address,
-                            rejoin_code=worker_players.get_player(
-                                nickname=client_nickname
-                            ).rejoin_code,
+                            rejoin_code=old_player.rejoin_code,
+                            score=old_player.score,
                         )
                     )
                     print("\x1B[33m" + client_nickname + " rejoined\x1B[0m")
@@ -196,6 +192,8 @@ class HangmanServer:
                     )
                     print("\x1B[36m" + client_nickname + " joined\x1B[0m")
 
+            except (ConnectionResetError, RuntimeError):
+                pass
             except BrokenPipeError:
                 sleep(0.5 * self.settings["delay_factor"])
             except KeyboardInterrupt:
@@ -219,7 +217,7 @@ class HangmanServer:
         game = HangmanGame(rounds=self.settings["rounds"])
 
         # start_timer determines if game is on or not:
-        #   an integer if not, value is seconds countdown
+        #   a float if not, value is deciseconds countdown
         #   None if running
         start_timer = None
 
@@ -227,7 +225,7 @@ class HangmanServer:
             # One second delay while waiting, but not ingame
             if start_timer is not None:
                 try:
-                    sleep(1 - time() % 1)
+                    sleep(0.1 - time() % 0.1)
                 except KeyboardInterrupt:
                     running.value = 0
 
@@ -245,7 +243,7 @@ class HangmanServer:
                 if start_timer is None:
                     # Game is done, new timer
                     start_timer = self.settings["lobby_time"]
-                elif start_timer == 0:
+                elif start_timer <= 0.01:
                     # Game start
                     send_all(players, GRAPHICS["clear"])
                     game.players = players
@@ -257,10 +255,10 @@ class HangmanServer:
                         send_all(
                             players,
                             "\r\x1B[01;36mStarting in "
-                            + str(start_timer)
-                            + "\x1B[0m\n",
+                            + prettify_time(int(start_timer))
+                            + ".\x1B[0m\n",
                         )
-                    start_timer -= 1
+                    start_timer = round(start_timer - 0.1, 1)
 
             try:
                 ready_sockets = select(
@@ -338,6 +336,8 @@ class HangmanServer:
 
     def stop(self):
         """Stop the hangman server."""
+        if not bool(self.running.value):
+            raise RuntimeError("Server is not running.")
         print("\r\x1B[36mStopping server...\x1B[0m")
         self.running.value = 0
         self.server_process.join(5)
