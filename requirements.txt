@@ -1,5 +1,4 @@
 # May still work with earlier versions but untested
-#black>=23.3.0
 build>=0.10.0
-#pylint>=2.17.4
 setuptools>=67.7.0
+pyyaml>=6.0

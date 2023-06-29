@@ -1,6 +1,7 @@
 """Game classes, abstracted to the main components"""
 
 
+import socket as so
 from multiprocessing import Process, SimpleQueue
 
 from NetHang.graphics import GRAPHICS, string_to_masked
@@ -215,7 +216,7 @@ class HangmanTurn:
                         )
                         continue
                     break
-            except TimeoutError:
+            except (TimeoutError, so.timeout):
                 continue
             timeout_kill()
 

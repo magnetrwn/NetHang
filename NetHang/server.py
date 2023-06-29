@@ -111,7 +111,7 @@ class HangmanServer:
                             dirty = client_socket.recv(512)
                             if not dirty:
                                 break
-                    except TimeoutError:
+                    except (TimeoutError, so.timeout):
                         pass
                     client_socket.settimeout(None)
                     client_nickname = ""
@@ -322,7 +322,7 @@ class HangmanServer:
                 except BlockingIOError:
                     print("\x1B[01;91mUnavailable socket.\x1B[0m")
                     sleep(0.5 * self.settings["delay_factor"])
-                except TimeoutError:
+                except (TimeoutError, so.timeout):
                     # Fixes hanging on game ended
                     pass
 
