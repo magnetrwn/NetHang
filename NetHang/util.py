@@ -1,14 +1,18 @@
 """Utility functions"""
 
 
+import sys
 import signal
-import yaml
+import json
 
 
-def load_yaml_dict(file_path):
-    """Load YAML configuration or data files"""
+def load_json_dict(file_path):
+    """Load JSON configuration or data files, crash on error."""
     with open(file_path, "r", encoding="ascii") as file:
-        parsed = yaml.safe_load(file)
+        try:
+            parsed = json.load(file)
+        except json.decoder.JSONDecodeError as error:
+            sys.exit(error.args[1])
     return parsed or {}
 
 

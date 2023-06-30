@@ -2,7 +2,6 @@
 
 # Required
 build>=0.10.0
-pyyaml>=6.0
 setuptools>=67.7.0
 
 # Development libraries

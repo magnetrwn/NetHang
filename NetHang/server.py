@@ -10,7 +10,7 @@ from time import sleep, time
 
 from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
-from NetHang.util import load_yaml_dict, prettify_time
+from NetHang.util import load_json_dict, prettify_time
 
 # The game can be changed or switched during server time
 from NetHang.examples.hangman import Game
@@ -19,7 +19,7 @@ from NetHang.examples.hangman import Game
 class NetHangServer:
     """Contains all methods to run the game server for hangman."""
 
-    def __init__(self, server_address, priority_settings=None, bypass_yaml=False):
+    def __init__(self, server_address, priority_settings=None, bypass_json=False):
         self.server_address = server_address
         self.server_port = None
         self.server_socket = None
@@ -27,7 +27,7 @@ class NetHangServer:
         self.server_process = None
         self.running = Value("B", 0)
 
-        self._setup_settings(priority_settings, bypass_yaml)
+        self._setup_settings(priority_settings, bypass_json)
         self._setup_server()
 
         print(
@@ -42,13 +42,13 @@ class NetHangServer:
             + " max clients."
         )
 
-    def _setup_settings(self, priority_settings, bypass_yaml):
+    def _setup_settings(self, priority_settings, bypass_json):
         file_settings_path = path.join(
-            path.dirname(path.abspath(__file__)), "config", "settings.yml"
+            path.dirname(path.abspath(__file__)), "config", "settings.json"
         )
 
         # Extracting the server settings, parameter dict has priority on config file
-        settings = load_yaml_dict(file_settings_path) if not bypass_yaml else {}
+        settings = load_json_dict(file_settings_path) if not bypass_json else {}
         settings.update(priority_settings or {})
         settings.update(
             {
@@ -58,7 +58,7 @@ class NetHangServer:
                 )
             }
         )
-        if settings.get("avail_ports") == "auto":
+        if settings.get("avail_ports"):
             settings.update({"avail_ports": [randint(49152, 65535) for _ in range(5)]})
 
         self.settings = settings

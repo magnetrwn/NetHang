@@ -5,15 +5,15 @@ import sys
 from os import path
 
 from NetHang.server import NetHangServer
-from NetHang.util import load_yaml_dict
+from NetHang.util import load_json_dict
 
 
 def cli_run():
     """Run server with YAML config, standard run option"""
     settings_path = path.join(
-        path.dirname(path.abspath(__file__)), "config", "settings.yml"
+        path.dirname(path.abspath(__file__)), "config", "settings.json"
     )
-    settings = load_yaml_dict(settings_path)
+    settings = load_json_dict(settings_path)
 
     if settings.get("always_at") is not None:
         host = settings.get("always_at")

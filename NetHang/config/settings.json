@@ -1,0 +1,13 @@
+{
+    "always_at": null,
+    "max_conn": 20,
+    "avail_ports": true,
+    "new_conn_processes": 3,
+    "delay_factor": 0.0,
+    "allow_same_source_ip": true,
+    "blacklisted": null,
+    "lobby_time": 60,
+    "games": null,
+    "rounds": 5,
+    "turns": null
+}
