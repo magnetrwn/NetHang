@@ -19,7 +19,7 @@ def is_guessed(word, arr):
     return True
 
 
-class HangmanGame:
+class Game:
     """Base class for all turn-based hangman games."""
 
     def __init__(self, players=PlayerList(), rounds=5):
@@ -40,7 +40,7 @@ class HangmanGame:
                 return
             while hanger == prev_hanger:
                 hanger = players.get_random_player()
-            HangmanRound(hanger, players, commands_queue, rounds=self.rounds)
+            Round(hanger, players, commands_queue, rounds=self.rounds)
             prev_hanger = hanger
         send_all(players, "\x1B[01;36mGame ended.\x1B[0m\n")
 
@@ -68,7 +68,7 @@ class HangmanGame:
         return False
 
 
-class HangmanRound:
+class Round:
     """A single round of the turn-based hangman game."""
 
     def __init__(self, hanger, players, commands_queue, rounds=5):
@@ -120,7 +120,7 @@ class HangmanRound:
             )
 
             while self.fails <= 9 and not is_guessed(word, self.tried_letters):
-                HangmanTurn(
+                Turn(
                     word,
                     self.players,
                     self.guessers,
@@ -140,10 +140,10 @@ class HangmanRound:
                 send_all(self.players, "\n\x1B[01;91mGuessers lose!\x1B[0m\n")
 
         except (BrokenPipeError, BlockingIOError):
-            print("\x1B[01;91mUnavailable socket. Stopping ongoing game.\x1B[0m")
+            print("\x1B[01;91mUnavailable socket.\x1B[0m")
             send_all(
                 self.players,
-                "\n\x1B[01;91mUnavailable socket. Stopping ongoing game.\n\x1B[0m",
+                "\n\x1B[01;91mUnavailable socket.\n\x1B[0m",
             )
             return
 
@@ -159,7 +159,7 @@ class HangmanRound:
             self.fails = fails
 
 
-class HangmanTurn:
+class Turn:
     """A single turn of the turn-based hangman game, where all guessers guess."""
 
     def __init__(

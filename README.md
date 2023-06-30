@@ -3,7 +3,11 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 
-Hangman client-server game package (and soon library for client-server multiplayer lobby games), written in Python using no external libraries for maximum compatibility. Clients can use any TCP socket application (e.g. nc) to connect and play!
+Compact server library to manage multiplayer lobbies for most games, even as barebones as netcat clients. There are sample implementations of games in the `NetHang/examples` folder, which can be useful to demonstrate what the library automates. This README will be extended with recent updates soon.
+
+**Warning! Outdated information (from dev18) ahead!**
+
+---
 
 ## Asciinema Demo
 

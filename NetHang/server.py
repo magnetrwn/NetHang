@@ -1,4 +1,4 @@
-"""Contains HangmanServer, which runs the server"""
+"""Contains NetHangServer, which runs the server"""
 
 
 import socket as so
@@ -8,13 +8,15 @@ from random import randint
 from select import select
 from time import sleep, time
 
-from NetHang.game import HangmanGame
 from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
 from NetHang.util import load_yaml_dict, prettify_time
 
+# The game can be changed or switched during server time
+from NetHang.examples.hangman import Game
 
-class HangmanServer:
+
+class NetHangServer:
     """Contains all methods to run the game server for hangman."""
 
     def __init__(self, server_address, priority_settings=None, bypass_yaml=False):
@@ -73,7 +75,7 @@ class HangmanServer:
                 port = self.settings["avail_ports"][bind_tries]
                 bind_tries += 1
                 self.server_socket.bind((self.server_address, port))
-            except Exception as error:
+            except so.error as error:
                 print("\x1B[31m" + error.args[1] + "\x1B[0m")
                 fatal = error
             else:
@@ -214,7 +216,7 @@ class HangmanServer:
                 daemon=True,
             ).start()
 
-        game = HangmanGame(rounds=self.settings["rounds"])
+        game = Game(rounds=self.settings["rounds"])
 
         # start_timer determines if game is on or not:
         #   a float if not, value is deciseconds countdown

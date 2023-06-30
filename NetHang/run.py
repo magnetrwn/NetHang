@@ -4,7 +4,7 @@
 import sys
 from os import path
 
-from NetHang.server import HangmanServer
+from NetHang.server import NetHangServer
 from NetHang.util import load_yaml_dict
 
 
@@ -28,7 +28,7 @@ def cli_run():
         if host == "":
             host = "localhost"
 
-    server = HangmanServer(host, priority_settings=settings)
+    server = NetHangServer(host, priority_settings=settings)
     server.run()
     return server
 

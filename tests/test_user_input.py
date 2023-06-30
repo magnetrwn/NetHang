@@ -22,7 +22,7 @@ def generate_string(length, charset=LATIN1_PRINTABLE):
 
 def new_server():
     port = random.randint(49152, 65535)
-    return NetHang.server.HangmanServer(
+    return NetHang.server.NetHangServer(
         "localhost", priority_settings={"avail_ports": [port]}
     )
 
