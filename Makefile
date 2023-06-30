@@ -7,7 +7,7 @@ requirements:
 	pip3 install -r requirements.txt
 
 .PHONY: test
-test: clean requirements
+test: requirements
 	pytest
 
 .PHONY: build
