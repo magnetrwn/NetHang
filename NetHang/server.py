@@ -12,14 +12,22 @@ from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
 from NetHang.util import load_json_dict, prettify_time
 
-# The game can be changed or switched during server time
-from NetHang.examples.hangman import Game
+# Default game gets loaded if no game is available
+from NetHang.examples.hangman import Game as Hangman
 
 
 class NetHangServer:
     """Contains all methods to run the game server for hangman."""
 
-    def __init__(self, server_address, priority_settings=None, bypass_json=False):
+    def __init__(
+        self,
+        server_address,
+        game_class=Hangman,
+        priority_settings=None,
+        bypass_json=False,
+    ):
+        self.game_class = game_class
+
         self.server_address = server_address
         self.server_port = None
         self.server_socket = None
@@ -31,7 +39,7 @@ class NetHangServer:
         self._setup_server()
 
         print(
-            "Init'd server on [\x1B[36m"
+            "Ready to be started on [\x1B[36m"
             + self.server_address
             + ":"
             + str(self.server_port)
@@ -216,7 +224,7 @@ class NetHangServer:
                 daemon=True,
             ).start()
 
-        game = Game(rounds=self.settings["rounds"])
+        game = self.game_class(rounds=self.settings["rounds"])
 
         # start_timer determines if game is on or not:
         #   a float if not, value is deciseconds countdown

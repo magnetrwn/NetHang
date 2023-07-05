@@ -4,6 +4,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 
 Compact server library to manage multiplayer lobbies for most games, even as barebones as netcat clients. There are sample implementations of games in the `NetHang/examples` folder, which can be useful to demonstrate what the library automates. This README will be extended with recent updates soon.
+Also check out the `NetHang/examples` README and the `NetHang/config` README.
 
 **Warning! Outdated information (from dev18) ahead!**
 

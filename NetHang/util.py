@@ -1,18 +1,17 @@
 """Utility functions"""
 
 
-import sys
 import signal
 import json
 
 
 def load_json_dict(file_path):
-    """Load JSON configuration or data files, crash on error."""
+    """Load JSON configuration or data files, no error."""
     with open(file_path, "r", encoding="ascii") as file:
         try:
             parsed = json.load(file)
-        except json.decoder.JSONDecodeError as error:
-            sys.exit(error.args[1])
+        except json.decoder.JSONDecodeError:
+            parsed = None
     return parsed or {}
 
 
