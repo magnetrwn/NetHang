@@ -1,0 +1,15 @@
+{
+   "clear": "\u001B[2J\u001B[H",
+   "title": "\u001B[2J\u001B[H\u001B[01;36m ============= Welcome to Hangman =============\u001B[0m  \n",
+   "opening": "\nWelcome to the game of Hangman on command line!\nThis implementation allows multiple players to\nplay different versions of the game, which are:\n\n \u001B[01;36ma.\u001B[0m Round-robin writer, rotating the player who\n    writes the guessword after each turn;\n\n \u001B[01;36mb.\u001B[0m King of the hill, where the first to guess\n    the word correctly becomes the writer;\n\n \u001B[01;36mc.\u001B[0m Wordlist, where there is no writer and the\n    guessword is taken from a wordlist instead;\n\n \u001B[01;36md.\u001B[0m Time attack wordlist, the fastest of the\n    gamemodes, in which there are no turns and\n    guesses be given very quickly.\n\nYou can \u001B[01;36mquit\u001B[0m at any moment with \u001B[01;36m^C\u001B[0m (Ctrl-C).\n\n",
+   "hangman0": "\n\n\n\n\n\n\n\n         [ 0/9     ]\n",
+   "hangman1": "\n\n\n|\n|\n|\n|\n|\n|        [\u001B[07;36m \u001B[0m1/9     ]\n",
+   "hangman2": "\n ____\n/\n|\n|\n|\n|\n|\n|        [\u001B[07;36m 2\u001B[0m/9     ]\n",
+   "hangman3": "\n ____\n/   |\n|\n|\n|\n|\n|\n|        [\u001B[07;36m 3/\u001B[0m9     ]\n",
+   "hangman4": "\n ____\n/   |\n|  ( )\n|\n|\n|\n|\n|        [\u001B[07;36m 4/9\u001B[0m     ]\n",
+   "hangman5": "\n ____\n/   |\n|  ( )\n|   |\n|   |\n|   |\n|\n|        [\u001B[07;36m 5/9 \u001B[0m    ]\n",
+   "hangman6": "\n ____\n/   |\n|  ( )\n|  /|\n| / |\n|   |\n|\n|        [\u001B[07;36m 6/9  \u001B[0m   ]\n",
+   "hangman7": "\n ____\n/   |\n|  ( )\n|  /|\\\n| / | \\\n|   |\n|\n|        [\u001B[07;36m 7/9   \u001B[0m  ]\n",
+   "hangman8": "\n ____\n/   |\n|  ( )\n|  /|\\\n| / | \\\n|   |\n|  /\n| /      [\u001B[07;36m 8/9    \u001B[0m ]\n",
+   "hangman9": "\n ____\n/   |\n|  ( )\n|  /|\\\n| / | \\\n|   |\n|  / \\\n| /   \\  [\u001B[07;36m 9/9     \u001B[0m]\n"
+}

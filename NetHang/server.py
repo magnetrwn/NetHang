@@ -8,12 +8,29 @@ from random import randint
 from select import select
 from time import sleep, time
 
-from NetHang.graphics import GRAPHICS, should_countdown
 from NetHang.players import Player, PlayerList, generate_rejoin_code, send_all
 from NetHang.util import load_json_dict, prettify_time
 
 # Default game gets loaded if no game is available
-from NetHang.examples.hangman import Game as Hangman
+from NetHang.examples.hangman import Game as DefaultHangman
+
+
+def should_countdown(number):
+    """Countdown values should be printed if here"""
+    return number in [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        10.0,
+        30.0,
+        60.0,
+        90.0,
+        120.0,
+        180.0,
+        300.0,
+    ]
 
 
 class NetHangServer:
@@ -22,7 +39,7 @@ class NetHangServer:
     def __init__(
         self,
         server_address,
-        game_class=Hangman,
+        game_class=DefaultHangman,
         priority_settings=None,
         bypass_json=False,
     ):
@@ -104,7 +121,7 @@ class NetHangServer:
                 client_socket, client_addr_port = server_socket.accept()
                 client_address = client_addr_port[0]
                 sleep(0.5 * self.settings["delay_factor"])
-                client_socket.send(GRAPHICS["title"].encode("latin-1"))
+                client_socket.send(self.game_class.graphics["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
                 rejoined = False
                 old_player = None
@@ -190,7 +207,9 @@ class NetHangServer:
                             rejoin_code=rejoin_code,
                         )
                     )
-                    client_socket.send(GRAPHICS["opening"].encode("latin-1"))
+                    client_socket.send(
+                        self.game_class.graphics["opening"].encode("latin-1")
+                    )
                     client_socket.send(
                         (
                             "Your rejoin code is \x1B[01;91m"
@@ -255,7 +274,7 @@ class NetHangServer:
                     start_timer = self.settings["lobby_time"]
                 elif start_timer <= 0.01:
                     # Game start
-                    send_all(players, GRAPHICS["clear"])
+                    send_all(players, self.game_class.graphics["clear"])
                     game.players = players
                     game.start()
                     start_timer = None

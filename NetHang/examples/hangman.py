@@ -2,11 +2,27 @@
 
 
 import socket as so
+from os import path
 from multiprocessing import Process, SimpleQueue
 
-from NetHang.graphics import GRAPHICS, string_to_masked
 from NetHang.players import PlayerList, send_all
-from NetHang.util import timeout_in, timeout_kill
+from NetHang.util import load_json_dict, timeout_in, timeout_kill
+
+_game_graphics_path = path.join(path.dirname(path.abspath(__file__)), "hangman.json")
+GRAPHICS = load_json_dict(_game_graphics_path)
+
+
+def string_to_masked(string, to_show):
+    """Return the input string wrapped, colorized and masked. Use lowercase for list to_show."""
+    out = ""
+    for i, strchar in enumerate(string):
+        if (i + 1) % 48 == 0:
+            out += "-\n-"
+        if strchar.lower() in to_show or not strchar.isalpha():
+            out += "\x1B[01;36m" + strchar + "\x1B[0m"
+        else:
+            out += "."
+    return out
 
 
 def is_guessed(word, arr):
@@ -22,7 +38,10 @@ def is_guessed(word, arr):
 class Game:
     """Base class for all turn-based hangman games."""
 
-    def __init__(self, players=PlayerList(), rounds=5):
+    # TODO: Passthrough is smelly
+    graphics = GRAPHICS
+
+    def __init__(self, players=PlayerList(), rounds=5, graphics=GRAPHICS):
         self.players = players
         self.commands_queue = SimpleQueue()
         self.rounds = rounds
