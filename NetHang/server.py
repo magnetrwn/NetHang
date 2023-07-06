@@ -39,6 +39,7 @@ class NetHangServer:
     def __init__(
         self,
         server_address,
+        # Class for picking the game for the server to run!
         game_class=DefaultHangman,
         priority_settings=None,
         bypass_json=False,
