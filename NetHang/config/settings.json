@@ -6,8 +6,5 @@
     "delay_factor": 0.0,
     "allow_same_source_ip": true,
     "blacklisted": null,
-    "lobby_time": 60,
-    "games": null,
-    "rounds": 5,
-    "turns": null
+    "lobby_time": 60
 }

@@ -9,7 +9,7 @@ from NetHang.players import PlayerList, send_all
 from NetHang.util import load_json_dict, timeout_in, timeout_kill
 
 _game_graphics_path = path.join(path.dirname(path.abspath(__file__)), "hangman.json")
-GRAPHICS = load_json_dict(_game_graphics_path)
+GAME_DATA = load_json_dict(_game_graphics_path)
 
 
 def string_to_masked(string, to_show):
@@ -38,13 +38,13 @@ def is_guessed(word, arr):
 class Game:
     """Base class for all turn-based hangman games."""
 
-    # TODO: Passthrough is smelly
-    graphics = GRAPHICS
+    # Dict is passed through, essential for server.py showing early user joining info.
+    game_data = GAME_DATA
 
-    def __init__(self, players=PlayerList(), rounds=5, graphics=GRAPHICS):
+    def __init__(self, players=PlayerList()):
         self.players = players
         self.commands_queue = SimpleQueue()
-        self.rounds = rounds
+        self.rounds = GAME_DATA["rounds"]
         self.game_process = None
 
     def _game_loop(self, players, commands_queue):
@@ -130,7 +130,7 @@ class Round:
                     continue
                 break
 
-            send_all(self.players, GRAPHICS["clear"])
+            send_all(self.players, GAME_DATA["clear"])
             send_all(
                 self.players,
                 "\x1B[01;36mSCORE\x1B[0m\n"
@@ -205,7 +205,7 @@ class Turn:
             send_all(
                 self.players,
                 "\n\x1B[01;36mHANGER\x1B[0m\n"
-                + GRAPHICS["hangman" + str(self.fails)[0]]
+                + GAME_DATA["hangman" + str(self.fails)[0]]
                 + "\n\n",
             )
 
@@ -285,7 +285,7 @@ class Turn:
                     guesser.score -= 200 + (guesser.score // 5)
 
             # Clear screen and print scores
-            send_all(self.players, GRAPHICS["clear"])
+            send_all(self.players, GAME_DATA["clear"])
             send_all(
                 self.players,
                 "\x1B[01;36mSCORE\x1B[0m\n" + str(self.players.scoreboard()) + "\n\n",

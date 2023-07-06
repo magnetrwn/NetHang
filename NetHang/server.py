@@ -121,7 +121,7 @@ class NetHangServer:
                 client_socket, client_addr_port = server_socket.accept()
                 client_address = client_addr_port[0]
                 sleep(0.5 * self.settings["delay_factor"])
-                client_socket.send(self.game_class.graphics["title"].encode("latin-1"))
+                client_socket.send(self.game_class.game_data["title"].encode("latin-1"))
                 worker_players = players_read_queue.get()
                 rejoined = False
                 old_player = None
@@ -208,7 +208,7 @@ class NetHangServer:
                         )
                     )
                     client_socket.send(
-                        self.game_class.graphics["opening"].encode("latin-1")
+                        self.game_class.game_data["opening"].encode("latin-1")
                     )
                     client_socket.send(
                         (
@@ -243,7 +243,8 @@ class NetHangServer:
                 daemon=True,
             ).start()
 
-        game = self.game_class(rounds=self.settings["rounds"])
+        # The class parameter game class is used for making any game
+        game = self.game_class()
 
         # start_timer determines if game is on or not:
         #   a float if not, value is deciseconds countdown
@@ -274,7 +275,7 @@ class NetHangServer:
                     start_timer = self.settings["lobby_time"]
                 elif start_timer <= 0.01:
                     # Game start
-                    send_all(players, self.game_class.graphics["clear"])
+                    send_all(players, self.game_class.game_data["clear"])
                     game.players = players
                     game.start()
                     start_timer = None

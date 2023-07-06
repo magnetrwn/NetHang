@@ -17,11 +17,3 @@
 + `allow_same_source_ip`: Allow two or more users from the same source IP address
 + `blacklisted`: Blacklist of IP addresses on server startup
 + `lobby_time`: Duration of the pause between games, the value at which countdown starts
-
-### `game.py`
-
-*Optional functionality for user-defined and example games.*
-
-+ `games`: Number of games
-+ `rounds`: Number of rounds in one game
-+ `turns`: Number of turns in one round
