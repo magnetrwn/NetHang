@@ -28,7 +28,14 @@ def cli_run():
         if host == "":
             host = "localhost"
 
-    server = NetHangServer(host, priority_settings=settings)
+    module_name, class_name = settings["game_class"].rsplit(".", 1)
+    imported_class = __import__(module_name, fromlist=[class_name])
+    server = NetHangServer(
+        host,
+        game_class=getattr(imported_class, class_name),
+        priority_settings=settings,
+    )
+
     server.run()
     return server
 

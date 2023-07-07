@@ -1,4 +1,5 @@
 {
+    "game_class": "NetHang.examples.hangman.Game",
     "always_at": null,
     "max_conn": 20,
     "avail_ports": true,
