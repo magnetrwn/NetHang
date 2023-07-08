@@ -59,7 +59,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest --cov=NetHang --cov-report xml
+          python -m pytest --cov=NetHang --cov-config=setup.cfg --cov-report xml
           coverage-lcov
 
       - name: Coveralls GitHub Action
