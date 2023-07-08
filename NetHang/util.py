@@ -15,14 +15,6 @@ def load_json_dict(file_path):
     return parsed or {}
 
 
-def first_not_none(*args):
-    """Returns the first non-None argument found"""
-    for arg in args:
-        if arg is not None:
-            return arg
-    return None
-
-
 def timeout_handler(signum, frame):
     """Function to call on timeout signal."""
     raise TimeoutError("Timeout occurred")
@@ -30,6 +22,7 @@ def timeout_handler(signum, frame):
 
 def timeout_in(seconds):
     """Raise timeout signal in seconds."""
+    assert seconds > 0
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(seconds)
 
@@ -39,21 +32,9 @@ def timeout_kill():
     signal.alarm(0)
 
 
-def run_with_timeout(seconds, code_block):
-    """Run function, but raise on timeout."""
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(seconds)
-
-    try:
-        code_block()
-    except TimeoutError:
-        pass
-    finally:
-        signal.alarm(0)
-
-
 def prettify_time(seconds):
     """Make time durations prettier."""
+    assert seconds > 0
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     time_parts = []

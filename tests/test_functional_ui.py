@@ -1,4 +1,4 @@
-"""All tests related to possibly invalid, dirty or bad user input."""
+"""All functional tests related to possibly invalid, dirty or bad user input."""
 
 # NetHang globally uses "latin-1" encoding, but maybe "utf-8" is better?
 # Some tests check the user input with mismatching encoding.

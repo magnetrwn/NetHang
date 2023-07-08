@@ -8,11 +8,12 @@ from NetHang.server import NetHangServer
 from NetHang.util import load_json_dict
 
 
-def cli_run():
+def cli_run(settings_path=None):
     """Run server with YAML config, standard run option"""
-    settings_path = path.join(
-        path.dirname(path.abspath(__file__)), "config", "settings.json"
-    )
+    if settings_path is None:
+        settings_path = path.join(
+            path.dirname(path.abspath(__file__)), "config", "settings.json"
+        )
     settings = load_json_dict(settings_path)
 
     if settings.get("always_at") is not None:
