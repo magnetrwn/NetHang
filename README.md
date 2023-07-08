@@ -2,6 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
+[![Coverage Status](https://coveralls.io/repos/github/magnetrwn/NetHang/badge.svg?branch=main)](https://coveralls.io/github/magnetrwn/NetHang?branch=main)
 
 Compact server library to manage multiplayer lobbies for games, even as barebones as netcat clients, using only standard Python packages. There are sample implementations of games in the `NetHang/examples` folder, which can be useful to demonstrate what the library automates. The demo shows a sample implementation of a game of hangman, which is located in the examples folder.
 
