@@ -39,7 +39,32 @@ jobs:
       - name: Run tests
         run: make test
 
+  coverage:
+    runs-on: ubuntu-latest
+    if: ${{ ! github.event.pull_request.draft }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -U pytest-cov coverage-lcov
+
+      - name: Run tests
+        run: |
+          python -m pytest --cov=NetHang --cov-report xml
+          coverage-lcov
+
       - name: Coveralls GitHub Action
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: lcov.info
