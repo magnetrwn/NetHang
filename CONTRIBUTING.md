@@ -19,6 +19,6 @@ If you find inconsistencies, consider creating an issue describing the problem.
 
 ### Code Style
 
-Use Black to automatically style the project: `black .`
+Use Black (and Trunk Check if possible) to automatically style the project: `black .`
 
 **Thank you!**
