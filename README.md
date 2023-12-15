@@ -4,15 +4,15 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/magnetrwn/NetHang/badge)](https://www.codefactor.io/repository/github/magnetrwn/NetHang)
 [![Coverage Status](https://coveralls.io/repos/github/magnetrwn/NetHang/badge?branch=main)](https://coveralls.io/github/magnetrwn/NetHang?branch=main)
 
+**Note:** This was my Python project to get up to speed with the language and especially `setuptools`, `multiprocessing` and `socket`. It's development quality, not good as a library. Suggested use is only as educational material.
+
 Compact server library to manage multiplayer lobbies for games, even as barebones as netcat clients, using only standard Python packages. There are sample implementations of games in the `NetHang/examples` folder, which can be useful to demonstrate what the library automates. The demo shows a sample implementation of a game of hangman, which is located in the examples folder.
 
 Check out the `NetHang/examples` [README](NetHang/examples/README.md) and the `NetHang/config` [README](NetHang/config/README.md).
 
-## Asciinema Demo
+## WebM Demo (Large)
 
-**Note:** Please be aware that this demo is based on v0.0.1.dev18, which is outdated. Expect limited representation of functionality.
-
-[![asciicast](https://asciinema.org/a/593263.svg)](https://asciinema.org/a/593263)
+![WebM Demo](demo.gif)
 
 ## Installation
 
